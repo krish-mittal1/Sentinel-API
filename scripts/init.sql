@@ -1,7 +1,3 @@
--- ============================================
--- Sentinel API — Database Initialization
--- ============================================
-
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE IF NOT EXISTS users (
@@ -14,10 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
--- Index for email lookups (login)
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
--- Function to auto-update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -26,7 +20,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger to auto-update updated_at on row change
 DROP TRIGGER IF EXISTS trg_users_updated_at ON users;
 CREATE TRIGGER trg_users_updated_at
     BEFORE UPDATE ON users

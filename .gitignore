@@ -1,4 +1,4 @@
-# Python
+
 __pycache__/
 *.pyc
 *.pyo
@@ -21,25 +21,25 @@ wheels/
 .installed.cfg
 *.egg
 
-# Virtual environments
+
 .venv/
 venv/
 ENV/
 
-# Secrets / Config
+
 .env
 .env.*
 !.env.example
 
-# Logs
+
 *.log
 
-# IDEs / OS
+
 .idea/
 .vscode/
 *.swp
 .DS_Store
 
-# PostgreSQL / DB
+
 pgdata/
 postgres_data/
