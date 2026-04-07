@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sentinel API Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <header class="hero">
+      <div class="hero__content">
+        <p class="eyebrow">Sentinel API Gateway</p>
+        <h1>Auth, users, and guardrails for your startup.</h1>
+        <p class="lede">
+          Sentinel bundles signup, login, email verification, rate limiting, audit logs, and
+          admin insights behind a single gateway. Use it as your auth backbone or as a reference
+          architecture for production systems.
+        </p>
+        <div class="hero__actions">
+          <a class="button primary" href="#try-it">Try the live API</a>
+          <a class="button ghost" href="#deploy">Deployment options</a>
+        </div>
+      </div>
+      <div class="hero__panel">
+        <div class="panel">
+          <div class="panel__title">Gateway Status</div>
+          <div class="panel__value" id="statusText">Checking…</div>
+          <div class="panel__muted" id="statusUrl">Base URL not set</div>
+          <button class="button subtle" id="checkHealth">Re-check</button>
+        </div>
+        <div class="panel">
+          <div class="panel__title">Quick Facts</div>
+          <ul class="panel__list">
+            <li>JWT auth + refresh tokens</li>
+            <li>Email verification & password reset</li>
+            <li>Rate limiting & Redis-backed guards</li>
+            <li>Audit logs and admin dashboard endpoints</li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="section">
+        <div class="section__grid">
+          <div>
+            <h2>How startups use Sentinel</h2>
+            <p>
+              Ship secure auth in hours. Plug Sentinel behind your web or mobile app, send users
+              through signup + verification, and keep tokens refreshed. The gateway protects
+              downstream services while the admin endpoints give product teams visibility into
+              adoption and risk.
+            </p>
+          </div>
+          <div class="card-stack">
+            <div class="card">
+              <h3>Launch fast</h3>
+              <p>Use the gateway as a single auth surface for apps, partners, and internal tools.</p>
+            </div>
+            <div class="card">
+              <h3>Stay safe</h3>
+              <p>Rate limits, login throttling, and audit logs are baked into every request.</p>
+            </div>
+            <div class="card">
+              <h3>Scale cleanly</h3>
+              <p>Move auth, users, and billing into separate services without losing cohesion.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="try-it" class="section">
+        <div class="section__header">
+          <div>
+            <h2>Try the live API</h2>
+            <p>Use the gateway endpoint and run the full auth lifecycle in your browser.</p>
+          </div>
+          <div class="base-url">
+            <label for="baseUrl">Gateway Base URL</label>
+            <input id="baseUrl" type="url" placeholder="https://your-gateway.onrender.com" />
+            <button class="button subtle" id="saveBaseUrl">Save</button>
+          </div>
+        </div>
+
+        <div class="forms">
+          <form class="form-card" id="signupForm">
+            <h3>Signup</h3>
+            <label>Email</label>
+            <input name="email" type="email" placeholder="demo@example.com" required />
+            <label>Password</label>
+            <input name="password" type="password" placeholder="Password123" required />
+            <label>Name</label>
+            <input name="name" type="text" placeholder="Demo" required />
+            <button class="button primary" type="submit">Create account</button>
+          </form>
+
+          <form class="form-card" id="verifyForm">
+            <h3>Verify Email</h3>
+            <label>Verification token</label>
+            <input name="token" type="text" placeholder="Paste token from signup" required />
+            <button class="button primary" type="submit">Verify</button>
+          </form>
+
+          <form class="form-card" id="loginForm">
+            <h3>Login</h3>
+            <label>Email</label>
+            <input name="email" type="email" placeholder="demo@example.com" required />
+            <label>Password</label>
+            <input name="password" type="password" placeholder="Password123" required />
+            <button class="button primary" type="submit">Login</button>
+          </form>
+
+          <form class="form-card" id="profileForm">
+            <h3>Fetch Profile</h3>
+            <label>User ID</label>
+            <input name="userId" type="text" placeholder="Paste user id" required />
+            <label>Access token</label>
+            <input name="token" type="text" placeholder="Paste access token" required />
+            <button class="button primary" type="submit">Get user</button>
+          </form>
+        </div>
+
+        <div class="response">
+          <div class="response__header">
+            <h3>Response</h3>
+            <button class="button ghost" id="clearOutput">Clear</button>
+          </div>
+          <pre id="output">Waiting for a request…</pre>
+        </div>
+      </section>
+
+      <section id="deploy" class="section">
+        <h2>Deployment paths</h2>
+        <div class="deploy-grid">
+          <div class="card">
+            <h3>Render (fastest)</h3>
+            <p>Use the blueprint to spin up gateway, auth, user, Redis, and Postgres together.</p>
+          </div>
+          <div class="card">
+            <h3>Docker compose</h3>
+            <p>Run everything locally or on a VPS using the provided Dockerfiles.</p>
+          </div>
+          <div class="card">
+            <h3>VPS / Kubernetes</h3>
+            <p>Set env vars, attach Redis + Postgres, and scale services independently.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Ideas for next features</h2>
+        <div class="feature-grid">
+          <div class="pill">OAuth providers</div>
+          <div class="pill">Org / team management</div>
+          <div class="pill">API key issuance</div>
+          <div class="pill">Usage-based billing hooks</div>
+          <div class="pill">Webhooks for security events</div>
+          <div class="pill">Role-based access policies</div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Sentinel API demo • Built for portfolio + resume use</span>
+    </footer>
+
+    <script src="./config.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
