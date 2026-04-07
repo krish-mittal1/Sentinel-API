@@ -110,8 +110,6 @@ services:
     name: sentinel-redis
     plan: free
     region: oregon
-    ipAllowList:
-      - 0.0.0.0/0
 
 databases:
   - name: sentinel-postgres
@@ -119,8 +117,6 @@ databases:
     region: oregon
     databaseName: sentinel_db
     postgresMajorVersion: "16"
-    ipAllowList:
-      - 0.0.0.0/0
 
 envVarGroups:
   - name: sentinel-shared
