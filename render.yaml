@@ -110,6 +110,9 @@ services:
     name: sentinel-redis
     plan: free
     region: oregon
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: allow-all
 
 databases:
   - name: sentinel-postgres
