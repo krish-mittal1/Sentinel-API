@@ -1,5 +1,5 @@
 window.SENTINEL_CONFIG = {
-  defaultBaseUrl: "https://sentinel-gateway-cviz.onrender.com",
+  defaultBaseUrl: "http://20.197.31.143:8010",
   signupPath: "/auth/signup",
   verifyPath: "/auth/verify-email",
   loginPath: "/auth/login",
