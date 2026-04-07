@@ -50,19 +50,59 @@
     try {
       return text ? JSON.parse(text) : {};
     } catch (error) {
-      return { raw: text };
+      const isHtml = /<!doctype html>|<html/i.test(text);
+      return {
+        raw: isHtml ? "Received HTML error page from upstream service." : text,
+        isHtml
+      };
     }
   }
 
-  async function request(path, options) {
-    const response = await fetch(getBaseUrl() + path, options);
-    const data = await safeJson(response);
-    writeOutput({
+  function sleep(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  function formatOutput(response, path, data) {
+    if (data && data.isHtml) {
+      return {
+        status: response.status,
+        ok: response.ok,
+        path,
+        message:
+          "The gateway reached an upstream service that returned an HTML error page. On Render free tier this usually means the auth or user service is waking up from sleep. Wait 20-40 seconds and retry.",
+        hint:
+          "Open the auth or gateway base URL once, let it warm up, then try the request again."
+      };
+    }
+
+    return {
       status: response.status,
       ok: response.ok,
       path,
       data
-    });
+    };
+  }
+
+  async function request(path, options) {
+    const url = getBaseUrl() + path;
+    let response = await fetch(url, options);
+    let data = await safeJson(response);
+
+    if ((response.status === 502 || response.status === 503) && data && data.isHtml) {
+      writeOutput({
+        status: response.status,
+        ok: false,
+        path,
+        message: "Upstream service looks cold. Waiting 8 seconds and retrying once..."
+      });
+      await sleep(8000);
+      response = await fetch(url, options);
+      data = await safeJson(response);
+    }
+
+    writeOutput(formatOutput(response, path, data));
     return { response, data };
   }
 
