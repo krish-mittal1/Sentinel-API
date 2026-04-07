@@ -4,12 +4,10 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_DB: sentinel_db
       POSTGRES_USER: sentinel
-      POSTGRES_PASSWORD: sentinel_secret_123
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sentinel_secret_123}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -22,39 +20,62 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  auth-service:
-    build: ./auth-service
+  mailpit:
+    image: axllent/mailpit:v1.20
     restart: unless-stopped
     ports:
-      - "8001:8001"
+      - "8025:8025"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8025"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrations
     env_file: .env
     environment:
       POSTGRES_HOST: postgres
-      REDIS_HOST: redis
     depends_on:
       postgres:
         condition: service_healthy
 
+  auth-service:
+    build: ./auth-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      EMAIL_DELIVERY_MODE: smtp
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
   user-service:
     build: ./user-service
     restart: unless-stopped
-    ports:
-      - "8002:8002"
     env_file: .env
     environment:
       POSTGRES_HOST: postgres
       REDIS_HOST: redis
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
 
   api-gateway:
     build: ./api-gateway
