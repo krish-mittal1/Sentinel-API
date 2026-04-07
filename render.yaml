@@ -1,0 +1,149 @@
+services:
+  - type: web
+    name: sentinel-gateway
+    runtime: docker
+    plan: free
+    region: oregon
+    rootDir: api-gateway
+    dockerfilePath: Dockerfile
+    dockerContext: .
+    envVars:
+      - fromGroup: sentinel-shared
+      - key: AUTH_SERVICE_URL
+        sync: false
+      - key: USER_SERVICE_URL
+        sync: false
+      - key: REDIS_HOST
+        fromService:
+          type: keyvalue
+          name: sentinel-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: keyvalue
+          name: sentinel-redis
+          property: port
+      - key: RATE_LIMIT_WINDOW_SEC
+        value: "60"
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "100"
+
+  - type: web
+    name: sentinel-auth
+    runtime: docker
+    plan: free
+    region: oregon
+    rootDir: auth-service
+    dockerfilePath: Dockerfile
+    dockerContext: .
+    envVars:
+      - fromGroup: sentinel-shared
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: sentinel-postgres
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: sentinel-postgres
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: sentinel-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: sentinel-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: sentinel-postgres
+          property: password
+      - key: REDIS_HOST
+        fromService:
+          type: keyvalue
+          name: sentinel-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: keyvalue
+          name: sentinel-redis
+          property: port
+      - key: EMAIL_DELIVERY_MODE
+        value: file
+      - key: EMAIL_FROM
+        value: no-reply@sentinel.local
+      - key: EMAIL_OUTPUT_DIR
+        value: ./outbox
+
+  - type: web
+    name: sentinel-user
+    runtime: docker
+    plan: free
+    region: oregon
+    rootDir: user-service
+    dockerfilePath: Dockerfile
+    dockerContext: .
+    envVars:
+      - fromGroup: sentinel-shared
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: sentinel-postgres
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: sentinel-postgres
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: sentinel-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: sentinel-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: sentinel-postgres
+          property: password
+
+  - type: keyvalue
+    name: sentinel-redis
+    plan: free
+    region: oregon
+    ipAllowList:
+      - 0.0.0.0/0
+
+databases:
+  - name: sentinel-postgres
+    plan: free
+    region: oregon
+    databaseName: sentinel_db
+    postgresMajorVersion: "16"
+    ipAllowList:
+      - 0.0.0.0/0
+
+envVarGroups:
+  - name: sentinel-shared
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRES_MINUTES
+        value: "1440"
+      - key: CORS_ORIGINS
+        value: '["*"]'
+      - key: REFRESH_TOKEN_DAYS
+        value: "14"
+      - key: PASSWORD_RESET_TOKEN_MINUTES
+        value: "60"
+      - key: EMAIL_VERIFICATION_TOKEN_MINUTES
+        value: "60"
+      - key: LOGIN_WINDOW_SEC
+        value: "300"
+      - key: LOGIN_MAX_ATTEMPTS
+        value: "5"
+      - key: LOGIN_LOCKOUT_SEC
+        value: "900"
+      - key: AUTH_DEBUG_RETURN_TOKENS
+        value: "true"
