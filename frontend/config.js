@@ -1,5 +1,5 @@
 window.SENTINEL_CONFIG = {
-  defaultBaseUrl: "http://20.197.31.143:8010",
+  defaultBaseUrl: "https://sentinel.codexarena.app",
   signupPath: "/auth/signup",
   verifyPath: "/auth/verify-email",
   loginPath: "/auth/login",
