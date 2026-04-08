@@ -234,6 +234,10 @@ code {
   padding-left: 18px;
 }
 
+.panel__list--ordered {
+  padding-left: 20px;
+}
+
 main {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
@@ -312,12 +316,17 @@ input:focus {
 .forms {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 22px;
+  align-items: start;
 }
 
 .form-card {
   padding: 22px;
   display: grid;
   gap: 10px;
+}
+
+.form-card--wide {
+  grid-column: span 2;
 }
 
 .response {

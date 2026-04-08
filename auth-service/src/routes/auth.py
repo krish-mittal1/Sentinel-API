@@ -15,7 +15,10 @@ from ..schemas import (
     ResetPasswordRequest,
     SignupRequest,
     SignupResponse,
+    StartupOnboardingRequest,
+    StartupOnboardingResponse,
     TokenMessageResponse,
+    TenantResponse,
     UserResponse,
     VerifyEmailRequest,
 )
@@ -33,6 +36,37 @@ def _client_meta(request: Request) -> Tuple[Optional[str], Optional[str]]:
 
 def _tenant_slug(request: Request) -> str:
     return request.headers.get(settings.TENANT_HEADER_NAME, settings.DEFAULT_TENANT_SLUG)
+
+
+@router.post("/onboard-startup", response_model=StartupOnboardingResponse, status_code=status.HTTP_201_CREATED)
+async def onboard_startup(
+    data: StartupOnboardingRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    ip_address, user_agent = _client_meta(request)
+    tenant, founder, verification_token = await auth_service.onboard_startup(
+        data,
+        db,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        metrics=request.app.state.metrics,
+    )
+    await db.commit()
+    await send_email(
+        to_email=founder.email,
+        subject=f"Verify your {tenant.name} founder account",
+        text_body=(
+            f"Your startup {tenant.name} is ready in Sentinel.\n\n"
+            f"Use this verification token to activate your founder account:\n{verification_token}\n"
+        ),
+    )
+    return StartupOnboardingResponse(
+        message="Startup created. Verify the founder account to activate admin access.",
+        verification_token=verification_token if settings.AUTH_DEBUG_RETURN_TOKENS else None,
+        tenant=TenantResponse.model_validate(tenant),
+        founder=UserResponse.model_validate(founder),
+    )
 
 @router.post("/signup", response_model=SignupResponse, status_code=status.HTTP_201_CREATED)
 async def signup(

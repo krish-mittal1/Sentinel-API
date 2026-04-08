@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
 from ..models import AuditLog, AuthToken, RefreshSession, Tenant, User
-from ..schemas import ForgotPasswordRequest, LoginRequest, SignupRequest
+from ..schemas import ForgotPasswordRequest, LoginRequest, SignupRequest, StartupOnboardingRequest
 from ..utils.audit import record_audit_event
 from ..utils.exceptions import ConflictError, ForbiddenError, UnauthorizedError
 from ..utils.hashing import hash_password, verify_password
@@ -225,6 +225,70 @@ async def signup(
     if metrics:
         metrics.record_auth_event("signup", "success")
     return user, verification_token
+
+
+async def onboard_startup(
+    data: StartupOnboardingRequest,
+    db: AsyncSession,
+    *,
+    ip_address: Optional[str],
+    user_agent: Optional[str],
+    metrics: Optional[MetricsRegistry] = None,
+) -> Tuple[Tenant, User, str]:
+    tenant = await create_tenant_record(
+        db,
+        name=data.startup_name.strip(),
+        slug=data.startup_slug,
+    )
+
+    founder = User(
+        tenant_id=tenant.id,
+        email=data.founder_email,
+        password=hash_password(data.founder_password),
+        name=data.founder_name,
+        role="admin",
+    )
+    db.add(founder)
+
+    try:
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        if metrics:
+            metrics.record_auth_event("startup_onboarding", "conflict")
+        raise ConflictError("Founder email is already registered for this startup")
+
+    verification_token = await _create_action_token(
+        db,
+        tenant,
+        founder,
+        EMAIL_VERIFICATION,
+        settings.EMAIL_VERIFICATION_TOKEN_MINUTES,
+    )
+
+    await record_audit_event(
+        db,
+        tenant_id=tenant.id,
+        event_type="startup_created",
+        user_id=founder.id,
+        email=founder.email,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        details=f"tenant_slug={tenant.slug}",
+    )
+    await record_audit_event(
+        db,
+        tenant_id=tenant.id,
+        event_type="founder_signup",
+        user_id=founder.id,
+        email=founder.email,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        details="verification_token_issued",
+    )
+    if metrics:
+        metrics.record_auth_event("startup_onboarding", "success")
+    return tenant, founder, verification_token
 
 
 async def verify_email(

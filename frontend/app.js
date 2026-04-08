@@ -1,11 +1,10 @@
 (function () {
   const config = window.SENTINEL_CONFIG || {};
   const storageKey = "sentinel-demo-base-url";
-  const tenantStorageKey = "sentinel-demo-tenant-slug";
+  const tenantStorageKey = "sentinel-demo-active-startup";
 
   const elements = {
     baseUrl: document.getElementById("baseUrl"),
-    tenantSlug: document.getElementById("tenantSlug"),
     saveBaseUrl: document.getElementById("saveBaseUrl"),
     output: document.getElementById("output"),
     statusText: document.getElementById("statusText"),
@@ -13,56 +12,67 @@
     tenantPill: document.getElementById("tenantPill"),
     checkHealth: document.getElementById("checkHealth"),
     clearOutput: document.getElementById("clearOutput"),
-    signupForm: document.getElementById("signupForm"),
+    startupForm: document.getElementById("startupForm"),
     verifyForm: document.getElementById("verifyForm"),
     loginForm: document.getElementById("loginForm"),
+    sessionForm: document.getElementById("sessionForm"),
     profileForm: document.getElementById("profileForm")
   };
 
-  function getBaseUrl() {
-    return (
-      localStorage.getItem(storageKey) ||
-      config.defaultBaseUrl ||
-      ""
-    ).replace(/\/+$/, "");
+  function field(form, name) {
+    return form.elements.namedItem(name);
   }
 
-  function getTenantSlug() {
-    return (
-      localStorage.getItem(tenantStorageKey) ||
-      config.defaultTenantSlug ||
-      "default"
-    ).trim();
+  function getBaseUrl() {
+    return (localStorage.getItem(storageKey) || config.defaultBaseUrl || "").replace(/\/+$/, "");
+  }
+
+  function getActiveStartupSlug() {
+    return (localStorage.getItem(tenantStorageKey) || "").trim();
+  }
+
+  function setActiveStartupSlug(slug) {
+    const normalized = (slug || "").trim().toLowerCase();
+    if (normalized) {
+      localStorage.setItem(tenantStorageKey, normalized);
+    } else {
+      localStorage.removeItem(tenantStorageKey);
+    }
+    renderBaseUrl();
+  }
+
+  function renderBaseUrl() {
+    const baseUrl = getBaseUrl();
+    const activeStartup = getActiveStartupSlug();
+    elements.baseUrl.value = baseUrl;
+    elements.statusUrl.textContent = baseUrl || "Base URL not set";
+    elements.tenantPill.textContent = activeStartup
+      ? "Active startup: " + activeStartup
+      : "Active startup: none";
+
+    if (!field(elements.loginForm, "tenant_slug").value && activeStartup) {
+      field(elements.loginForm, "tenant_slug").value = activeStartup;
+    }
   }
 
   function saveBaseUrl() {
     const value = elements.baseUrl.value.trim().replace(/\/+$/, "");
     if (!value) {
-      return writeOutput({ error: "Enter a valid gateway base URL first." });
+      writeOutput({ error: "Enter a valid gateway base URL first." });
+      return;
     }
-    const tenantSlug = elements.tenantSlug.value.trim() || config.defaultTenantSlug || "default";
     localStorage.setItem(storageKey, value);
-    localStorage.setItem(tenantStorageKey, tenantSlug);
     renderBaseUrl();
     checkHealth();
   }
 
-  function renderBaseUrl() {
-    const baseUrl = getBaseUrl();
-    const tenantSlug = getTenantSlug();
-    elements.baseUrl.value = baseUrl;
-    elements.tenantSlug.value = tenantSlug;
-    elements.statusUrl.textContent = baseUrl || "Base URL not set";
-    elements.tenantPill.textContent = "Tenant: " + (tenantSlug || "default");
-  }
-
-  function withTenantHeader(options) {
-    const tenantSlug = getTenantSlug();
+  function withTenantHeader(options, tenantSlug) {
     const headerName = config.tenantHeaderName || "X-Tenant-Slug";
     const headers = Object.assign({}, options && options.headers ? options.headers : {});
+    const slug = (tenantSlug || "").trim().toLowerCase();
 
-    if (tenantSlug) {
-      headers[headerName] = tenantSlug;
+    if (slug) {
+      headers[headerName] = slug;
     }
 
     return Object.assign({}, options, { headers });
@@ -113,9 +123,9 @@
     };
   }
 
-  async function request(path, options) {
+  async function request(path, options, tenantSlug) {
     const url = getBaseUrl() + path;
-    let response = await fetch(url, withTenantHeader(options));
+    let response = await fetch(url, withTenantHeader(options, tenantSlug));
     let data = await safeJson(response);
 
     if ((response.status === 502 || response.status === 503) && data && data.isHtml) {
@@ -126,7 +136,7 @@
         message: "Upstream service looks cold. Waiting 8 seconds and retrying once..."
       });
       await sleep(8000);
-      response = await fetch(url, withTenantHeader(options));
+      response = await fetch(url, withTenantHeader(options, tenantSlug));
       data = await safeJson(response);
     }
 
@@ -164,46 +174,83 @@
     return Object.fromEntries(new FormData(form).entries());
   }
 
-  async function onSignup(event) {
+  function fillFounderSession(payload, tenantSlug) {
+    if (tenantSlug) {
+      setActiveStartupSlug(tenantSlug);
+      field(elements.loginForm, "tenant_slug").value = tenantSlug;
+    }
+
+    if (payload && payload.access_token) {
+      field(elements.sessionForm, "token").value = payload.access_token;
+      field(elements.profileForm, "token").value = payload.access_token;
+    }
+
+    if (payload && payload.user) {
+      field(elements.profileForm, "userId").value = payload.user.id || "";
+      field(elements.loginForm, "email").value = payload.user.email || field(elements.loginForm, "email").value;
+    }
+  }
+
+  async function onStartupCreate(event) {
     event.preventDefault();
-    const payload = formJson(elements.signupForm);
-    const { data } = await request(config.signupPath, {
+    const payload = formJson(elements.startupForm);
+    const { data } = await request(config.onboardStartupPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
 
-    if (data && data.data && data.data.verification_token) {
-      elements.verifyForm.token.value = data.data.verification_token;
-    } else if (data && data.verification_token) {
-      elements.verifyForm.token.value = data.verification_token;
+    const result = data && data.data ? data.data : data;
+    if (result && result.tenant && result.tenant.slug) {
+      setActiveStartupSlug(result.tenant.slug);
+      field(elements.loginForm, "tenant_slug").value = result.tenant.slug;
+    }
+    if (result && result.founder) {
+      field(elements.loginForm, "email").value = result.founder.email || "";
+      field(elements.profileForm, "userId").value = result.founder.id || "";
+    }
+    if (result && result.verification_token) {
+      field(elements.verifyForm, "token").value = result.verification_token;
     }
   }
 
   async function onVerify(event) {
     event.preventDefault();
-    await request(config.verifyPath, {
+    const { data } = await request(config.verifyPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formJson(elements.verifyForm))
     });
+
+    const payload = data && data.data ? data.data : data;
+    fillFounderSession(payload, payload && payload.user && payload.user.tenant_slug ? payload.user.tenant_slug : getActiveStartupSlug());
   }
 
   async function onLogin(event) {
     event.preventDefault();
+    const payload = formJson(elements.loginForm);
+    const tenantSlug = payload.tenant_slug;
     const { data } = await request(config.loginPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formJson(elements.loginForm))
-    });
+      body: JSON.stringify({
+        email: payload.email,
+        password: payload.password
+      })
+    }, tenantSlug);
 
-    const payload = data && data.data ? data.data : data;
-    if (payload && payload.access_token) {
-      elements.profileForm.token.value = payload.access_token;
-    }
-    if (payload && payload.user && payload.user.id) {
-      elements.profileForm.userId.value = payload.user.id;
-    }
+    const result = data && data.data ? data.data : data;
+    fillFounderSession(result, tenantSlug);
+  }
+
+  async function onSession(event) {
+    event.preventDefault();
+    await request(config.mePath, {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer " + formJson(elements.sessionForm).token
+      }
+    });
   }
 
   async function onProfile(event) {
@@ -216,7 +263,7 @@
       headers: {
         Authorization: "Bearer " + payload.token
       }
-    });
+    }, getActiveStartupSlug());
   }
 
   elements.saveBaseUrl.addEventListener("click", saveBaseUrl);
@@ -224,9 +271,10 @@
   elements.clearOutput.addEventListener("click", function () {
     writeOutput("Waiting for a request...");
   });
-  elements.signupForm.addEventListener("submit", onSignup);
+  elements.startupForm.addEventListener("submit", onStartupCreate);
   elements.verifyForm.addEventListener("submit", onVerify);
   elements.loginForm.addEventListener("submit", onLogin);
+  elements.sessionForm.addEventListener("submit", onSession);
   elements.profileForm.addEventListener("submit", onProfile);
 
   renderBaseUrl();

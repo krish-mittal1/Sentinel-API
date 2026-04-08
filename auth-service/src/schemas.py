@@ -11,6 +11,13 @@ class SignupRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
     name: str = Field(..., min_length=1, max_length=100)
 
+class StartupOnboardingRequest(BaseModel):
+    startup_name: str = Field(..., min_length=2, max_length=120)
+    startup_slug: str = Field(..., min_length=2, max_length=64, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+    founder_email: EmailStr = Field(..., examples=["founder@example.com"])
+    founder_password: str = Field(..., min_length=8, max_length=128)
+    founder_name: str = Field(..., min_length=1, max_length=100)
+
 class LoginRequest(BaseModel):
     email: EmailStr = Field(..., examples=["user@example.com"])
     password: str = Field(...)
@@ -65,6 +72,12 @@ class TenantResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class StartupOnboardingResponse(BaseModel):
+    message: str
+    verification_token: Optional[str] = None
+    tenant: TenantResponse
+    founder: UserResponse
 
 class MessageResponse(BaseModel):
     message: str
