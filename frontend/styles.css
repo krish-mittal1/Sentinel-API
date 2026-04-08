@@ -112,7 +112,8 @@ li,
 label,
 input,
 button,
-a {
+a,
+code {
   font-size: 1rem;
 }
 
@@ -120,6 +121,14 @@ p,
 li {
   color: var(--muted);
   line-height: 1.65;
+}
+
+code {
+  font-family: "Spline Sans Mono", monospace;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
 }
 
 .lede {
@@ -206,6 +215,20 @@ li {
   word-break: break-word;
 }
 
+.panel__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(184, 76, 42, 0.12);
+  border: 1px solid rgba(184, 76, 42, 0.18);
+  color: var(--accent-strong);
+  font-weight: 600;
+  width: fit-content;
+}
+
 .panel__list {
   margin: 14px 0 0;
   padding-left: 18px;
@@ -261,6 +284,11 @@ main {
   display: grid;
   gap: 8px;
   min-width: min(100%, 360px);
+}
+
+.input-help {
+  margin: -2px 0 6px;
+  font-size: 0.92rem;
 }
 
 label {

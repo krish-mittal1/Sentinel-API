@@ -21,8 +21,8 @@
         <h1>Auth, users, and guardrails for your startup.</h1>
         <p class="lede">
           Sentinel bundles signup, login, email verification, rate limiting, audit logs, and
-          admin insights behind a single gateway. Use it as your auth backbone or as a reference
-          architecture for production systems.
+          tenant isolation behind a single gateway. Use it as your auth backbone for one product
+          or as a shared multi-startup platform with tenant-scoped users and tokens.
         </p>
         <div class="hero__actions">
           <a class="button primary" href="#try-it">Try the live API</a>
@@ -34,6 +34,7 @@
           <div class="panel__title">Gateway Status</div>
           <div class="panel__value" id="statusText">Checking...</div>
           <div class="panel__muted" id="statusUrl">Base URL not set</div>
+          <div class="panel__chip" id="tenantPill">Tenant: default</div>
           <button class="button subtle" id="checkHealth">Re-check</button>
         </div>
         <div class="panel">
@@ -42,7 +43,7 @@
             <li>JWT auth + refresh tokens</li>
             <li>Email verification & password reset</li>
             <li>Rate limiting & Redis-backed guards</li>
-            <li>Audit logs and admin dashboard endpoints</li>
+            <li>Audit logs, admin endpoints, and tenant isolation</li>
           </ul>
         </div>
       </div>
@@ -54,10 +55,9 @@
           <div>
             <h2>How startups use Sentinel</h2>
             <p>
-              Ship secure auth in hours. Plug Sentinel behind your web or mobile app, send users
-              through signup + verification, and keep tokens refreshed. The gateway protects
-              downstream services while the admin endpoints give product teams visibility into
-              adoption and risk.
+              Ship secure auth in hours. Plug Sentinel behind your web or mobile app, assign each
+              startup its own tenant slug, and let the gateway keep users, sessions, and audit
+              events separated while sharing one deployment.
             </p>
           </div>
           <div class="card-stack">
@@ -66,12 +66,40 @@
               <p>Use the gateway as a single auth surface for apps, partners, and internal tools.</p>
             </div>
             <div class="card">
-              <h3>Stay safe</h3>
-              <p>Rate limits, login throttling, and audit logs are baked into every request.</p>
+              <h3>Keep startups separate</h3>
+              <p>Each startup uses a tenant slug, so auth and user records stay isolated in one shared stack.</p>
             </div>
             <div class="card">
               <h3>Scale cleanly</h3>
-              <p>Move auth, users, and billing into separate services without losing cohesion.</p>
+              <p>Move auth, users, billing, and tenant admin into separate services without losing cohesion.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section__grid">
+          <div>
+            <h2>Shared deployment model</h2>
+            <p>
+              One Sentinel deployment can serve multiple startups. Each startup gets its own
+              tenant slug such as <code>startup-one</code>, and the frontend sends that slug in
+              the <code>X-Tenant-Slug</code> request header so user data, sessions, and protected
+              reads stay tenant-scoped.
+            </p>
+          </div>
+          <div class="card-stack">
+            <div class="card">
+              <h3>1. Create a tenant</h3>
+              <p>Use the admin API once to create a startup tenant like <code>startup-one</code>.</p>
+            </div>
+            <div class="card">
+              <h3>2. Save the tenant slug</h3>
+              <p>Set the tenant slug in this UI so every signup, login, and profile request is scoped correctly.</p>
+            </div>
+            <div class="card">
+              <h3>3. Reuse the same gateway</h3>
+              <p>All startups hit the same public gateway URL while Sentinel separates data internally.</p>
             </div>
           </div>
         </div>
@@ -81,13 +109,14 @@
         <div class="section__header">
           <div>
             <h2>Try the live API</h2>
-            <p>Use the live HTTPS gateway and run the full auth lifecycle in your browser.</p>
+            <p>Use the live HTTPS gateway, choose a tenant slug, and run the full auth lifecycle in your browser.</p>
           </div>
           <div class="base-url">
             <label for="baseUrl">Gateway Base URL</label>
             <input id="baseUrl" type="url" placeholder="https://sentinel.codexarena.app" />
             <label for="tenantSlug">Tenant Slug</label>
             <input id="tenantSlug" type="text" placeholder="default" />
+            <p class="input-help">Examples: <code>default</code>, <code>startup-one</code>, <code>startup-two</code></p>
             <button class="button subtle" id="saveBaseUrl">Save</button>
           </div>
         </div>
@@ -148,11 +177,11 @@
           </div>
           <div class="card">
             <h3>Pangolin + HTTPS</h3>
-            <p>Expose the gateway through `sentinel.codexarena.app` with Traefik, TLS, and custom domain routing.</p>
+            <p>Expose the gateway through <code>sentinel.codexarena.app</code> with Traefik, TLS, and custom domain routing.</p>
           </div>
           <div class="card">
-            <h3>Vercel frontend</h3>
-            <p>Point the static demo UI at the live gateway and test signup, verification, login, and protected fetches.</p>
+            <h3>Tenant-aware frontend</h3>
+            <p>Point the static demo UI at the live gateway, set a tenant slug, and test startup-specific auth flows.</p>
           </div>
         </div>
       </section>

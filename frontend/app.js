@@ -10,6 +10,7 @@
     output: document.getElementById("output"),
     statusText: document.getElementById("statusText"),
     statusUrl: document.getElementById("statusUrl"),
+    tenantPill: document.getElementById("tenantPill"),
     checkHealth: document.getElementById("checkHealth"),
     clearOutput: document.getElementById("clearOutput"),
     signupForm: document.getElementById("signupForm"),
@@ -52,6 +53,7 @@
     elements.baseUrl.value = baseUrl;
     elements.tenantSlug.value = tenantSlug;
     elements.statusUrl.textContent = baseUrl || "Base URL not set";
+    elements.tenantPill.textContent = "Tenant: " + (tenantSlug || "default");
   }
 
   function withTenantHeader(options) {
