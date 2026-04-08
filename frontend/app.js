@@ -16,7 +16,17 @@
     verifyForm: document.getElementById("verifyForm"),
     loginForm: document.getElementById("loginForm"),
     sessionForm: document.getElementById("sessionForm"),
-    profileForm: document.getElementById("profileForm")
+    profileForm: document.getElementById("profileForm"),
+    memberForm: document.getElementById("memberForm"),
+    loadDashboard: document.getElementById("loadDashboard"),
+    loadTeam: document.getElementById("loadTeam"),
+    metricStartup: document.getElementById("metricStartup"),
+    metricSlug: document.getElementById("metricSlug"),
+    metricUsers: document.getElementById("metricUsers"),
+    metricVerified: document.getElementById("metricVerified"),
+    metricAdmins: document.getElementById("metricAdmins"),
+    metricPending: document.getElementById("metricPending"),
+    teamTableBody: document.getElementById("teamTableBody")
   };
 
   function field(form, name) {
@@ -39,6 +49,10 @@
       localStorage.removeItem(tenantStorageKey);
     }
     renderBaseUrl();
+  }
+
+  function getAccessToken() {
+    return field(elements.sessionForm, "token").value.trim() || field(elements.profileForm, "token").value.trim();
   }
 
   function renderBaseUrl() {
@@ -81,6 +95,49 @@
   function writeOutput(data) {
     elements.output.textContent =
       typeof data === "string" ? data : JSON.stringify(data, null, 2);
+  }
+
+  function writeTeamRows(users) {
+    if (!users || !users.length) {
+      elements.teamTableBody.innerHTML = '<tr><td colspan="4">No team members yet.</td></tr>';
+      return;
+    }
+
+    elements.teamTableBody.innerHTML = users
+      .map(function (user) {
+        return (
+          "<tr>" +
+          "<td>" + escapeHtml(user.name || "-") + "</td>" +
+          "<td>" + escapeHtml(user.email || "-") + "</td>" +
+          "<td>" + escapeHtml(user.role || "-") + "</td>" +
+          "<td>" + (user.email_verified ? "Yes" : "No") + "</td>" +
+          "</tr>"
+        );
+      })
+      .join("");
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function renderDashboard(overview) {
+    if (!overview || !overview.tenant || !overview.metrics) {
+      return;
+    }
+
+    elements.metricStartup.textContent = overview.tenant.name || "-";
+    elements.metricSlug.textContent = overview.tenant.slug || "-";
+    elements.metricUsers.textContent = String(overview.metrics.total_users ?? "-");
+    elements.metricVerified.textContent = String(overview.metrics.verified_users ?? "-");
+    elements.metricAdmins.textContent = String(overview.metrics.admin_users ?? "-");
+    elements.metricPending.textContent = String(overview.metrics.pending_verifications ?? "-");
+    writeTeamRows(overview.recent_users || []);
   }
 
   async function safeJson(response) {
@@ -224,6 +281,8 @@
 
     const payload = data && data.data ? data.data : data;
     fillFounderSession(payload, payload && payload.user && payload.user.tenant_slug ? payload.user.tenant_slug : getActiveStartupSlug());
+    await loadDashboardData();
+    await loadTeamMembers();
   }
 
   async function onLogin(event) {
@@ -241,6 +300,8 @@
 
     const result = data && data.data ? data.data : data;
     fillFounderSession(result, tenantSlug);
+    await loadDashboardData();
+    await loadTeamMembers();
   }
 
   async function onSession(event) {
@@ -266,6 +327,69 @@
     }, getActiveStartupSlug());
   }
 
+  async function loadDashboardData() {
+    const token = getAccessToken();
+    if (!token) {
+      writeOutput({ error: "Log in first to load the startup dashboard." });
+      return;
+    }
+
+    const { data } = await request(config.startupOverviewPath, {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    }, getActiveStartupSlug());
+
+    const payload = data && data.data ? data.data : data;
+    renderDashboard(payload);
+  }
+
+  async function loadTeamMembers() {
+    const token = getAccessToken();
+    if (!token) {
+      writeOutput({ error: "Log in first to load team members." });
+      return;
+    }
+
+    const { data } = await request(config.teamListPath, {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    }, getActiveStartupSlug());
+
+    const payload = data && data.data ? data.data : data;
+    writeTeamRows(payload && payload.users ? payload.users : []);
+  }
+
+  async function onCreateMember(event) {
+    event.preventDefault();
+    const token = getAccessToken();
+    if (!token) {
+      writeOutput({ error: "Log in as a startup admin before creating team members." });
+      return;
+    }
+
+    const payload = formJson(elements.memberForm);
+    const { data } = await request(config.createMemberPath, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify(payload)
+    }, getActiveStartupSlug());
+
+    const result = data && data.data ? data.data : data;
+    if (result && result.verification_token) {
+      field(elements.verifyForm, "token").value = result.verification_token;
+    }
+    elements.memberForm.reset();
+    await loadDashboardData();
+    await loadTeamMembers();
+  }
+
   elements.saveBaseUrl.addEventListener("click", saveBaseUrl);
   elements.checkHealth.addEventListener("click", checkHealth);
   elements.clearOutput.addEventListener("click", function () {
@@ -276,6 +400,9 @@
   elements.loginForm.addEventListener("submit", onLogin);
   elements.sessionForm.addEventListener("submit", onSession);
   elements.profileForm.addEventListener("submit", onProfile);
+  elements.memberForm.addEventListener("submit", onCreateMember);
+  elements.loadDashboard.addEventListener("click", loadDashboardData);
+  elements.loadTeam.addEventListener("click", loadTeamMembers);
 
   renderBaseUrl();
   checkHealth();

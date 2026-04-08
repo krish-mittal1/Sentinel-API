@@ -1,13 +1,22 @@
 import json
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..config import settings
 from ..database import get_db
 from ..dependencies import require_role
-from ..schemas import TenantCreateRequest, TenantResponse
-from ..services.auth_service import create_tenant, dashboard_snapshot, list_tenants
+from ..schemas import (
+    StartupOverviewResponse,
+    TeamMemberCreateRequest,
+    TeamMemberCreateResponse,
+    TenantCreateRequest,
+    TenantResponse,
+    UserResponse,
+)
+from ..services.auth_service import create_team_member, create_tenant, dashboard_snapshot, list_tenants, startup_overview
+from ..utils.email import send_email
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -194,6 +203,19 @@ async def dashboard(
     return HTMLResponse(_dashboard_html(await dashboard_snapshot(db)))
 
 
+@router.get("/startup-overview", response_model=StartupOverviewResponse)
+async def startup_overview_route(
+    current_user: dict = Depends(require_role("admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    overview = await startup_overview(current_user, db)
+    return StartupOverviewResponse(
+        tenant=TenantResponse.model_validate(overview["tenant"]),
+        metrics=overview["metrics"],
+        recent_users=[UserResponse.model_validate(item) for item in overview["recent_users"]],
+    )
+
+
 @router.get("/tenants", response_model=list[TenantResponse])
 async def tenants(
     current_user: dict = Depends(require_role("admin")),
@@ -210,3 +232,36 @@ async def create_tenant_route(
 ):
     tenant = await create_tenant(data.name, data.slug, db)
     return TenantResponse.model_validate(tenant)
+
+
+@router.post("/members", response_model=TeamMemberCreateResponse)
+async def create_member_route(
+    data: TeamMemberCreateRequest,
+    request: Request,
+    current_user: dict = Depends(require_role("admin", "super_admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    user, verification_token = await create_team_member(
+        current_user,
+        email=data.email,
+        password=data.password,
+        name=data.name,
+        role=data.role,
+        db=db,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    await send_email(
+        to_email=user.email,
+        subject="Verify your Sentinel team account",
+        text_body=(
+            "A startup admin created your Sentinel account.\n\n"
+            f"Use this verification token to activate your account:\n{verification_token}\n"
+        ),
+    )
+    return TeamMemberCreateResponse(
+        message="Team member created. Verify the account to activate login.",
+        verification_token=verification_token if settings.AUTH_DEBUG_RETURN_TOKENS else None,
+        user=UserResponse.model_validate(user),
+    )

@@ -79,6 +79,29 @@ class StartupOnboardingResponse(BaseModel):
     tenant: TenantResponse
     founder: UserResponse
 
+class StartupMetricsResponse(BaseModel):
+    total_users: int
+    verified_users: int
+    admin_users: int
+    active_sessions: int
+    pending_verifications: int
+
+class StartupOverviewResponse(BaseModel):
+    tenant: TenantResponse
+    metrics: StartupMetricsResponse
+    recent_users: list[UserResponse]
+
+class TeamMemberCreateRequest(BaseModel):
+    email: EmailStr = Field(..., examples=["teammate@example.com"])
+    password: str = Field(..., min_length=8, max_length=128)
+    name: str = Field(..., min_length=1, max_length=100)
+    role: str = Field("user", pattern=r"^(user|admin)$")
+
+class TeamMemberCreateResponse(BaseModel):
+    message: str
+    verification_token: Optional[str] = None
+    user: UserResponse
+
 class MessageResponse(BaseModel):
     message: str
 

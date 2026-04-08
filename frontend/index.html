@@ -43,7 +43,7 @@
             <li>Create the startup and founder admin in one request.</li>
             <li>Verify the founder account.</li>
             <li>Log in with the startup slug.</li>
-            <li>Check the active founder session and tenant-scoped profile.</li>
+            <li>Open the startup dashboard and manage team members.</li>
           </ol>
         </div>
       </div>
@@ -143,6 +143,81 @@
           </form>
         </div>
 
+        <div class="forms forms--dashboard">
+          <div class="form-card form-card--wide">
+            <div class="response__header">
+              <h3>Startup Dashboard</h3>
+              <button class="button subtle" id="loadDashboard" type="button">Load dashboard</button>
+            </div>
+            <div class="metric-grid" id="dashboardMetrics">
+              <div class="metric-card">
+                <span>Startup</span>
+                <strong id="metricStartup">-</strong>
+              </div>
+              <div class="metric-card">
+                <span>Slug</span>
+                <strong id="metricSlug">-</strong>
+              </div>
+              <div class="metric-card">
+                <span>Total Users</span>
+                <strong id="metricUsers">-</strong>
+              </div>
+              <div class="metric-card">
+                <span>Verified Users</span>
+                <strong id="metricVerified">-</strong>
+              </div>
+              <div class="metric-card">
+                <span>Admins</span>
+                <strong id="metricAdmins">-</strong>
+              </div>
+              <div class="metric-card">
+                <span>Pending Verifications</span>
+                <strong id="metricPending">-</strong>
+              </div>
+            </div>
+          </div>
+
+          <form class="form-card" id="memberForm">
+            <h3>Create Team Member</h3>
+            <label>Name</label>
+            <input name="name" type="text" placeholder="Aarav" required />
+            <label>Email</label>
+            <input name="email" type="email" placeholder="aarav@codearena.app" required />
+            <label>Password</label>
+            <input name="password" type="password" placeholder="Password123" required />
+            <label>Role</label>
+            <select name="role">
+              <option value="user">user</option>
+              <option value="admin">admin</option>
+            </select>
+            <button class="button primary" type="submit">Create member</button>
+          </form>
+
+          <div class="form-card">
+            <div class="response__header">
+              <h3>Team Members</h3>
+              <button class="button subtle" id="loadTeam" type="button">Refresh team</button>
+            </div>
+            <div class="table-shell">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Verified</th>
+                  </tr>
+                </thead>
+                <tbody id="teamTableBody">
+                  <tr>
+                    <td colspan="4">Log in as a startup admin to load the team.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <div class="response">
           <div class="response__header">
             <h3>Response</h3>
@@ -166,6 +241,10 @@
           <div class="card">
             <h3>Founder-first frontend</h3>
             <p>The console now leads with startup creation instead of expecting founders to know internal tenant setup.</p>
+          </div>
+          <div class="card">
+            <h3>Startup dashboard</h3>
+            <p>Founders can now inspect startup metrics and create team members from the same console after login.</p>
           </div>
         </div>
       </section>

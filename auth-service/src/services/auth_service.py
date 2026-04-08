@@ -715,6 +715,114 @@ async def dashboard_snapshot(db: AsyncSession) -> dict:
     }
 
 
+async def startup_overview(current_user: dict, db: AsyncSession) -> dict:
+    tenant = await db.get(Tenant, uuid.UUID(current_user["tenant_id"]))
+    if not tenant:
+        raise UnauthorizedError("Startup no longer exists")
+
+    tenant_filter = User.tenant_id == tenant.id
+    total_users = await db.scalar(select(func.count(User.id)).where(tenant_filter))
+    verified_users = await db.scalar(
+        select(func.count(User.id)).where(tenant_filter, User.email_verified.is_(True))
+    )
+    admin_users = await db.scalar(
+        select(func.count(User.id)).where(tenant_filter, User.role.in_(["admin", "super_admin"]))
+    )
+    active_sessions = await db.scalar(
+        select(func.count(RefreshSession.id)).where(
+            RefreshSession.tenant_id == tenant.id,
+            RefreshSession.revoked_at.is_(None),
+            RefreshSession.expires_at > _utcnow(),
+        )
+    )
+    pending_verifications = await db.scalar(
+        select(func.count(AuthToken.id)).where(
+            AuthToken.tenant_id == tenant.id,
+            AuthToken.token_type == EMAIL_VERIFICATION,
+            AuthToken.consumed_at.is_(None),
+            AuthToken.expires_at > _utcnow(),
+        )
+    )
+    recent_users_result = await db.execute(
+        select(User).where(tenant_filter).order_by(User.created_at.desc()).limit(8)
+    )
+
+    return {
+        "tenant": tenant,
+        "metrics": {
+            "total_users": total_users or 0,
+            "verified_users": verified_users or 0,
+            "admin_users": admin_users or 0,
+            "active_sessions": active_sessions or 0,
+            "pending_verifications": pending_verifications or 0,
+        },
+        "recent_users": list(recent_users_result.scalars().all()),
+    }
+
+
+async def create_team_member(
+    current_user: dict,
+    *,
+    email: str,
+    password: str,
+    name: str,
+    role: str,
+    db: AsyncSession,
+    ip_address: Optional[str],
+    user_agent: Optional[str],
+    metrics: Optional[MetricsRegistry] = None,
+) -> Tuple[User, str]:
+    tenant = await db.get(Tenant, uuid.UUID(current_user["tenant_id"]))
+    if not tenant:
+        raise UnauthorizedError("Startup no longer exists")
+
+    result = await db.execute(
+        select(User).where(User.tenant_id == tenant.id, User.email == email)
+    )
+    existing = result.scalar_one_or_none()
+    if existing:
+        if metrics:
+            metrics.record_auth_event("team_member_create", "conflict")
+        raise ConflictError("Email already registered for this startup")
+
+    user = User(
+        tenant_id=tenant.id,
+        email=email,
+        password=hash_password(password),
+        name=name,
+        role=role,
+    )
+    db.add(user)
+    try:
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        if metrics:
+            metrics.record_auth_event("team_member_create", "conflict")
+        raise ConflictError("Email already registered for this startup")
+
+    verification_token = await _create_action_token(
+        db,
+        tenant,
+        user,
+        EMAIL_VERIFICATION,
+        settings.EMAIL_VERIFICATION_TOKEN_MINUTES,
+    )
+    await record_audit_event(
+        db,
+        tenant_id=tenant.id,
+        event_type="team_member_created",
+        user_id=user.id,
+        email=user.email,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        details=f"role={role};created_by={current_user['sub']}",
+    )
+    if metrics:
+        metrics.record_auth_event("team_member_create", "success")
+    return user, verification_token
+
+
 async def _default_tenant_id(db: AsyncSession) -> uuid.UUID:
     tenant = await ensure_default_tenant(db)
     return tenant.id
