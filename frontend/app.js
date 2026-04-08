@@ -71,9 +71,9 @@
         ok: response.ok,
         path,
         message:
-          "The gateway reached an upstream service that returned an HTML error page. On Render free tier this usually means the auth or user service is waking up from sleep. Wait 20-40 seconds and retry.",
+          "The gateway reached an upstream service that returned an HTML error page. This usually means the upstream service is unavailable or returning a non-API response.",
         hint:
-          "Open the auth or gateway base URL once, let it warm up, then try the request again."
+          "Check the Azure containers and gateway routing, then retry the request."
       };
     }
 

@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sentinel API Demo</title>
+    <link rel="icon" href="data:," />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -25,13 +26,13 @@
         </p>
         <div class="hero__actions">
           <a class="button primary" href="#try-it">Try the live API</a>
-          <a class="button ghost" href="#deploy">Deployment options</a>
+          <a class="button ghost" href="#deploy">Deployment overview</a>
         </div>
       </div>
       <div class="hero__panel">
         <div class="panel">
           <div class="panel__title">Gateway Status</div>
-          <div class="panel__value" id="statusText">Checking…</div>
+          <div class="panel__value" id="statusText">Checking...</div>
           <div class="panel__muted" id="statusUrl">Base URL not set</div>
           <button class="button subtle" id="checkHealth">Re-check</button>
         </div>
@@ -80,11 +81,11 @@
         <div class="section__header">
           <div>
             <h2>Try the live API</h2>
-            <p>Use the gateway endpoint and run the full auth lifecycle in your browser.</p>
+            <p>Use the live HTTPS gateway and run the full auth lifecycle in your browser.</p>
           </div>
           <div class="base-url">
             <label for="baseUrl">Gateway Base URL</label>
-            <input id="baseUrl" type="url" placeholder="https://your-gateway.onrender.com" />
+            <input id="baseUrl" type="url" placeholder="https://sentinel.codexarena.app" />
             <button class="button subtle" id="saveBaseUrl">Save</button>
           </div>
         </div>
@@ -132,24 +133,24 @@
             <h3>Response</h3>
             <button class="button ghost" id="clearOutput">Clear</button>
           </div>
-          <pre id="output">Waiting for a request…</pre>
+          <pre id="output">Waiting for a request...</pre>
         </div>
       </section>
 
       <section id="deploy" class="section">
-        <h2>Deployment paths</h2>
+        <h2>Deployment overview</h2>
         <div class="deploy-grid">
           <div class="card">
-            <h3>Render (fastest)</h3>
-            <p>Use the blueprint to spin up gateway, auth, user, Redis, and Postgres together.</p>
+            <h3>Azure VM</h3>
+            <p>Run the full stack on a VPS with Docker Compose, Redis, Postgres, and service-level rebuilds.</p>
           </div>
           <div class="card">
-            <h3>Docker compose</h3>
-            <p>Run everything locally or on a VPS using the provided Dockerfiles.</p>
+            <h3>Pangolin + HTTPS</h3>
+            <p>Expose the gateway through `sentinel.codexarena.app` with Traefik, TLS, and custom domain routing.</p>
           </div>
           <div class="card">
-            <h3>VPS / Kubernetes</h3>
-            <p>Set env vars, attach Redis + Postgres, and scale services independently.</p>
+            <h3>Vercel frontend</h3>
+            <p>Point the static demo UI at the live gateway and test signup, verification, login, and protected fetches.</p>
           </div>
         </div>
       </section>
@@ -168,7 +169,7 @@
     </main>
 
     <footer class="footer">
-      <span>Sentinel API demo • Built for portfolio + resume use</span>
+      <span>Sentinel API demo - Built for portfolio + resume use</span>
     </footer>
 
     <script src="./config.js"></script>

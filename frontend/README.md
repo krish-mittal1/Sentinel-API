@@ -1,6 +1,6 @@
 # Sentinel Frontend Demo
 
-This is a static demo UI for Sentinel API.
+This is a static demo UI for Sentinel API, designed to hit the live Azure deployment through `https://sentinel.codexarena.app`.
 
 ## What it does
 
@@ -19,7 +19,14 @@ This is a static demo UI for Sentinel API.
 
 Default gateway URL:
 
-- `https://sentinel-gateway-cviz.onrender.com`
+- `https://sentinel.codexarena.app`
+
+Live stack:
+
+- frontend on Vercel
+- API gateway on Azure VM
+- Redis + Postgres via Docker Compose
+- HTTPS routing via Pangolin / Traefik
 
 ## Files
 
