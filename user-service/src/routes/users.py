@@ -13,10 +13,10 @@ router = APIRouter(tags=["Users"])
 
 @router.get("/", response_model=UserListResponse)
 async def list_users(
-    current_user: dict = Depends(require_role("admin")),
+    current_user: dict = Depends(require_role("admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    users, total = await user_service.get_all_users(db)
+    users, total = await user_service.get_all_users(current_user, db)
     return UserListResponse(
         users=[UserResponse.model_validate(u) for u in users],
         total=total,
@@ -44,7 +44,7 @@ async def update_user(
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: uuid.UUID,
-    current_user: dict = Depends(require_role("admin")),
+    current_user: dict = Depends(require_role("admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    await user_service.delete_user(user_id, db)
+    await user_service.delete_user(user_id, current_user, db)

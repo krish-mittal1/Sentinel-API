@@ -30,6 +30,10 @@ def _client_meta(request: Request) -> Tuple[Optional[str], Optional[str]]:
     user_agent = request.headers.get("user-agent")
     return ip_address, user_agent
 
+
+def _tenant_slug(request: Request) -> str:
+    return request.headers.get(settings.TENANT_HEADER_NAME, settings.DEFAULT_TENANT_SLUG)
+
 @router.post("/signup", response_model=SignupResponse, status_code=status.HTTP_201_CREATED)
 async def signup(
     data: SignupRequest,
@@ -38,6 +42,7 @@ async def signup(
 ):
     ip_address, user_agent = _client_meta(request)
     user, verification_token = await auth_service.signup(
+        _tenant_slug(request),
         data,
         db,
         ip_address=ip_address,
@@ -88,6 +93,7 @@ async def login(
 ):
     ip_address, user_agent = _client_meta(request)
     user, access_token, refresh_token = await auth_service.login(
+        _tenant_slug(request),
         data,
         db,
         ip_address=ip_address,
@@ -131,6 +137,7 @@ async def forgot_password(
 ):
     ip_address, user_agent = _client_meta(request)
     token = await auth_service.forgot_password(
+        _tenant_slug(request),
         data,
         db,
         ip_address=ip_address,

@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_db
 from ..dependencies import require_role
-from ..services.auth_service import dashboard_snapshot
+from ..schemas import TenantCreateRequest, TenantResponse
+from ..services.auth_service import create_tenant, dashboard_snapshot, list_tenants
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -26,6 +27,7 @@ def _dashboard_html(snapshot: dict) -> str:
     rows = "".join(
         f"""
         <tr>
+          <td>{user.get('tenant_id', '-')}</td>
           <td>{user['name']}</td>
           <td>{user['email']}</td>
           <td>{user['role']}</td>
@@ -39,6 +41,7 @@ def _dashboard_html(snapshot: dict) -> str:
     audit_rows = "".join(
         f"""
         <tr>
+          <td>{event.get('tenant_id', '-')}</td>
           <td>{event['event_type']}</td>
           <td>{event['email'] or '-'}</td>
           <td>{event['status']}</td>
@@ -47,6 +50,17 @@ def _dashboard_html(snapshot: dict) -> str:
         </tr>
         """
         for event in snapshot["recent_audit_events"]
+    )
+    tenant_rows = "".join(
+        f"""
+        <tr>
+          <td>{tenant['name']}</td>
+          <td>{tenant['slug']}</td>
+          <td>{'Yes' if tenant['is_active'] else 'No'}</td>
+          <td>{tenant['created_at']}</td>
+        </tr>
+        """
+        for tenant in snapshot.get("tenants", [])
     )
     return f"""<!doctype html>
 <html lang="en">
@@ -115,6 +129,7 @@ def _dashboard_html(snapshot: dict) -> str:
       <table>
         <thead>
           <tr>
+            <th>Tenant</th>
             <th>Name</th>
             <th>Email</th>
             <th>Role</th>
@@ -123,7 +138,21 @@ def _dashboard_html(snapshot: dict) -> str:
             <th>Last Login</th>
           </tr>
         </thead>
-        <tbody>{rows or '<tr><td colspan="6">No users yet.</td></tr>'}</tbody>
+        <tbody>{rows or '<tr><td colspan="7">No users yet.</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div class="panel" style="margin-top: 18px;">
+      <h2>Tenants</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Slug</th>
+            <th>Active</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>{tenant_rows or '<tr><td colspan="4">No tenants yet.</td></tr>'}</tbody>
       </table>
     </div>
     <div class="panel" style="margin-top: 18px;">
@@ -131,6 +160,7 @@ def _dashboard_html(snapshot: dict) -> str:
       <table>
         <thead>
           <tr>
+            <th>Tenant</th>
             <th>Event</th>
             <th>Email</th>
             <th>Status</th>
@@ -138,7 +168,7 @@ def _dashboard_html(snapshot: dict) -> str:
             <th>When</th>
           </tr>
         </thead>
-        <tbody>{audit_rows or '<tr><td colspan="5">No audit events yet.</td></tr>'}</tbody>
+        <tbody>{audit_rows or '<tr><td colspan="6">No audit events yet.</td></tr>'}</tbody>
       </table>
     </div>
     <div class="panel" style="margin-top: 18px;">
@@ -162,3 +192,21 @@ async def dashboard(
     db: AsyncSession = Depends(get_db),
 ):
     return HTMLResponse(_dashboard_html(await dashboard_snapshot(db)))
+
+
+@router.get("/tenants", response_model=list[TenantResponse])
+async def tenants(
+    current_user: dict = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    return [TenantResponse.model_validate(item) for item in await list_tenants(db)]
+
+
+@router.post("/tenants", response_model=TenantResponse)
+async def create_tenant_route(
+    data: TenantCreateRequest,
+    current_user: dict = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await create_tenant(data.name, data.slug, db)
+    return TenantResponse.model_validate(tenant)

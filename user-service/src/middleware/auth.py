@@ -21,7 +21,7 @@ async def get_current_user(request: Request) -> dict:
             detail="Invalid or expired token",
         )
 
-    if not payload.get("sub"):
+    if not payload.get("sub") or not payload.get("tenant_id"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",

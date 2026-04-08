@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     SMTP_USE_TLS: bool = False
     EMAIL_OUTPUT_DIR: str = "./outbox"
     AUTH_DEBUG_RETURN_TOKENS: bool = False
+    DEFAULT_TENANT_SLUG: str = "default"
+    TENANT_HEADER_NAME: str = "X-Tenant-Slug"
 
     @property
     def DATABASE_URL(self) -> str:

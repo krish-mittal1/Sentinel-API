@@ -30,6 +30,7 @@ class ResetPasswordRequest(BaseModel):
 
 class UserResponse(BaseModel):
     id: uuid.UUID
+    tenant_id: uuid.UUID
     email: str
     name: str
     role: str
@@ -50,6 +51,20 @@ class AuthResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+class TenantCreateRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=120)
+    slug: str = Field(..., min_length=2, max_length=64, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+class TenantResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    slug: str
+    is_active: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class MessageResponse(BaseModel):
     message: str

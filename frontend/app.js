@@ -1,9 +1,11 @@
 (function () {
   const config = window.SENTINEL_CONFIG || {};
   const storageKey = "sentinel-demo-base-url";
+  const tenantStorageKey = "sentinel-demo-tenant-slug";
 
   const elements = {
     baseUrl: document.getElementById("baseUrl"),
+    tenantSlug: document.getElementById("tenantSlug"),
     saveBaseUrl: document.getElementById("saveBaseUrl"),
     output: document.getElementById("output"),
     statusText: document.getElementById("statusText"),
@@ -24,20 +26,44 @@
     ).replace(/\/+$/, "");
   }
 
+  function getTenantSlug() {
+    return (
+      localStorage.getItem(tenantStorageKey) ||
+      config.defaultTenantSlug ||
+      "default"
+    ).trim();
+  }
+
   function saveBaseUrl() {
     const value = elements.baseUrl.value.trim().replace(/\/+$/, "");
     if (!value) {
       return writeOutput({ error: "Enter a valid gateway base URL first." });
     }
+    const tenantSlug = elements.tenantSlug.value.trim() || config.defaultTenantSlug || "default";
     localStorage.setItem(storageKey, value);
+    localStorage.setItem(tenantStorageKey, tenantSlug);
     renderBaseUrl();
     checkHealth();
   }
 
   function renderBaseUrl() {
     const baseUrl = getBaseUrl();
+    const tenantSlug = getTenantSlug();
     elements.baseUrl.value = baseUrl;
+    elements.tenantSlug.value = tenantSlug;
     elements.statusUrl.textContent = baseUrl || "Base URL not set";
+  }
+
+  function withTenantHeader(options) {
+    const tenantSlug = getTenantSlug();
+    const headerName = config.tenantHeaderName || "X-Tenant-Slug";
+    const headers = Object.assign({}, options && options.headers ? options.headers : {});
+
+    if (tenantSlug) {
+      headers[headerName] = tenantSlug;
+    }
+
+    return Object.assign({}, options, { headers });
   }
 
   function writeOutput(data) {
@@ -87,7 +113,7 @@
 
   async function request(path, options) {
     const url = getBaseUrl() + path;
-    let response = await fetch(url, options);
+    let response = await fetch(url, withTenantHeader(options));
     let data = await safeJson(response);
 
     if ((response.status === 502 || response.status === 503) && data && data.isHtml) {
@@ -98,7 +124,7 @@
         message: "Upstream service looks cold. Waiting 8 seconds and retrying once..."
       });
       await sleep(8000);
-      response = await fetch(url, options);
+      response = await fetch(url, withTenantHeader(options));
       data = await safeJson(response);
     }
 

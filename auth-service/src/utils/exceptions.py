@@ -23,6 +23,10 @@ class ConflictError(AppException):
     def __init__(self, detail: str = "Resource already exists"):
         super().__init__(409, detail)
 
+class NotFoundError(AppException):
+    def __init__(self, detail: str = "Resource not found"):
+        super().__init__(404, detail)
+
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,

@@ -12,6 +12,8 @@ class Settings(BaseSettings):
 
     USER_SERVICE_PORT: int = 8002
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    DEFAULT_TENANT_SLUG: str = "default"
+    TENANT_HEADER_NAME: str = "X-Tenant-Slug"
 
     @property
     def DATABASE_URL(self) -> str:

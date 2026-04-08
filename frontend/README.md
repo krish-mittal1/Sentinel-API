@@ -9,6 +9,7 @@ This is a static demo UI for Sentinel API, designed to hit the live Azure deploy
 - verifies email with the returned token
 - logs the user in
 - fetches the user profile with a bearer token
+- sends a tenant slug with requests so multiple startups can share one Sentinel deployment safely
 
 ## Deploy on Vercel
 
@@ -16,6 +17,7 @@ This is a static demo UI for Sentinel API, designed to hit the live Azure deploy
 2. Set the root directory to `frontend`.
 3. Deploy as a static project.
 4. If needed, update `config.js` with your latest gateway URL.
+5. Set the tenant slug in the UI or `config.js` when testing a specific startup/project.
 
 Default gateway URL:
 
@@ -34,4 +36,5 @@ Live stack:
 - `styles.css` contains the visual design
 - `app.js` contains the API calls
 - `config.js` stores endpoint paths and the default base URL
+- `config.js` also stores the default tenant slug and tenant header name
 - `vercel.json` adds basic static deployment settings

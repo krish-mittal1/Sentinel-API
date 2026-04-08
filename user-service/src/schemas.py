@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 class UserResponse(BaseModel):
     id: uuid.UUID
+    tenant_id: uuid.UUID
     email: str
     name: str
     role: str

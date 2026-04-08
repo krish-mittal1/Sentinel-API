@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     RATE_LIMIT_MAX_REQUESTS: int = 100
 
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    DEFAULT_TENANT_SLUG: str = "default"
+    TENANT_HEADER_NAME: str = "X-Tenant-Slug"
 
     class Config:
         env_file = ".env"

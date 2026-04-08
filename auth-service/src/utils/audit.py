@@ -12,6 +12,7 @@ logger = logging.getLogger("auth.audit")
 async def record_audit_event(
     db: AsyncSession,
     *,
+    tenant_id,
     event_type: str,
     user_id=None,
     email: Optional[str] = None,
@@ -22,6 +23,7 @@ async def record_audit_event(
 ) -> None:
     db.add(
         AuditLog(
+            tenant_id=tenant_id,
             event_type=event_type,
             user_id=user_id,
             email=email,
@@ -32,9 +34,10 @@ async def record_audit_event(
         )
     )
     logger.info(
-        "audit event=%s status=%s user_id=%s email=%s ip=%s",
+        "audit event=%s status=%s tenant_id=%s user_id=%s email=%s ip=%s",
         event_type,
         status,
+        tenant_id,
         user_id,
         email,
         ip_address,
