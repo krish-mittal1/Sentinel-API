@@ -273,13 +273,16 @@
 
   async function onVerify(event) {
     event.preventDefault();
-    const { data } = await request(config.verifyPath, {
+    const { response, data } = await request(config.verifyPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formJson(elements.verifyForm))
     });
 
     const payload = data && data.data ? data.data : data;
+    if (!response.ok || !payload || !payload.access_token) {
+      return;
+    }
     fillFounderSession(payload, payload && payload.user && payload.user.tenant_slug ? payload.user.tenant_slug : getActiveStartupSlug());
     await loadDashboardData();
     await loadTeamMembers();
@@ -289,7 +292,7 @@
     event.preventDefault();
     const payload = formJson(elements.loginForm);
     const tenantSlug = payload.tenant_slug;
-    const { data } = await request(config.loginPath, {
+    const { response, data } = await request(config.loginPath, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -299,6 +302,9 @@
     }, tenantSlug);
 
     const result = data && data.data ? data.data : data;
+    if (!response.ok || !result || !result.access_token) {
+      return;
+    }
     fillFounderSession(result, tenantSlug);
     await loadDashboardData();
     await loadTeamMembers();
@@ -372,7 +378,7 @@
     }
 
     const payload = formJson(elements.memberForm);
-    const { data } = await request(config.createMemberPath, {
+    const { response, data } = await request(config.createMemberPath, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -382,6 +388,9 @@
     }, getActiveStartupSlug());
 
     const result = data && data.data ? data.data : data;
+    if (!response.ok) {
+      return;
+    }
     if (result && result.verification_token) {
       field(elements.verifyForm, "token").value = result.verification_token;
     }
