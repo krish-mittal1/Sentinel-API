@@ -88,6 +88,28 @@
       </form>
       <button class="btn btn-ghost btn-full" id="showLoginBtn" style="margin-top:0.75rem">Back to sign in</button>
     </div>
+  <!-- Verify modal/screen -->
+    <div class="login-card hidden" id="verifyCard">
+      <div class="login-logo">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <rect width="36" height="36" rx="8" fill="#3ECF8E" fill-opacity="0.15"/>
+          <path d="M18 6L30 12V24L18 30L6 24V12L18 6Z" stroke="#3ECF8E" stroke-width="2" fill="none"/>
+          <circle cx="18" cy="18" r="4" fill="#3ECF8E"/>
+        </svg>
+        <span>Sentinel Studio</span>
+      </div>
+      <h1>Verify Account</h1>
+      <p class="login-sub">Enter the token sent to your email.</p>
+      <form id="verifyForm">
+        <div class="field">
+          <label>Verification Token</label>
+          <input id="verifyToken" type="text" placeholder="Paste token here..." required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Verify & Sign In</button>
+        <p id="verifyError" class="error-msg hidden"></p>
+      </form>
+      <button class="btn btn-ghost btn-full" id="showLoginFromVerifyBtn" style="margin-top:0.75rem">Back to sign in</button>
+    </div>
   </div>
 
   <!-- ── Studio App ────────────────────────────────────────────────── -->

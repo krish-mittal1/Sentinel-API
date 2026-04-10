@@ -165,6 +165,10 @@ document.getElementById('showLoginBtn').addEventListener('click', () => {
   document.querySelectorAll('.login-card').forEach(c => c.classList.add('hidden'));
   document.getElementById('loginForm').closest('.login-card').classList.remove('hidden');
 });
+document.getElementById('showLoginFromVerifyBtn').addEventListener('click', () => {
+  document.querySelectorAll('.login-card').forEach(c => c.classList.add('hidden'));
+  document.getElementById('loginForm').closest('.login-card').classList.remove('hidden');
+});
 
 // Signup form
 document.getElementById('signupForm').addEventListener('submit', async (e) => {
@@ -187,12 +191,41 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
     return;
   }
 
-  let msg = `Project created! Check your email to verify your account, then sign in.`;
-  if (data.verification_token) {
-    msg = `Project created! Verify with token: ${data.verification_token}`;
-  }
-  okEl.textContent = msg;
+  // Save tenant slug temporarily for the verification login flow
+  window._tempVerifyTenant = document.getElementById('startupSlug').value.trim();
+
+  okEl.textContent = 'Project created! Paste your token on the next screen.';
   okEl.classList.remove('hidden');
+  
+  setTimeout(() => {
+    document.querySelectorAll('.login-card').forEach(c => c.classList.add('hidden'));
+    document.getElementById('verifyCard').classList.remove('hidden');
+  }, 1500);
+});
+
+// Verify form
+document.getElementById('verifyForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('button');
+  const errEl = document.getElementById('verifyError');
+  btn.disabled = true;
+  errEl.classList.add('hidden');
+
+  const token = document.getElementById('verifyToken').value.trim();
+  const { ok, data } = await apiPost('/auth/verify-email', { token });
+
+  btn.disabled = false;
+  if (!ok) {
+    errEl.textContent = data?.detail || 'Invalid or expired token';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  // Verification successful! API returns user and token
+  // Use the temporarily saved tenant slug for the session
+  const tenantSlug = window._tempVerifyTenant || 'default';
+  saveSession(data.access_token, { ...data.user, tenant_slug: tenantSlug });
+  showApp();
 });
 
 // Sign out
