@@ -55,9 +55,6 @@ services:
     environment:
       POSTGRES_HOST: postgres
       REDIS_HOST: redis
-      SMTP_HOST: mailpit
-      SMTP_PORT: 1025
-      EMAIL_DELIVERY_MODE: smtp
     depends_on:
       migrations:
         condition: service_completed_successfully
