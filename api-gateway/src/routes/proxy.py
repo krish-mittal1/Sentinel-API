@@ -8,6 +8,7 @@ router = APIRouter()
 SERVICE_MAP = {
     "/auth": settings.AUTH_SERVICE_URL,
     "/users": settings.USER_SERVICE_URL,
+    "/rest": settings.DATA_SERVICE_URL,
 }
 
 async def _proxy(request: Request, service_url: str, path: str) -> Response:
@@ -65,3 +66,17 @@ async def proxy_users(request: Request, path: str):
 )
 async def proxy_users_root(request: Request):
     return await _proxy(request, settings.USER_SERVICE_URL, "")
+
+@router.api_route(
+    "/rest/v1/{path:path}",
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+)
+async def proxy_data_api(request: Request, path: str):
+    return await _proxy(request, settings.DATA_SERVICE_URL, f"rest/v1/{path}")
+
+@router.api_route(
+    "/rest/v1",
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+)
+async def proxy_data_api_root(request: Request):
+    return await _proxy(request, settings.DATA_SERVICE_URL, "rest/v1")

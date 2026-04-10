@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     AUTH_SERVICE_URL: str = "http://localhost:8001"
     USER_SERVICE_URL: str = "http://localhost:8002"
+    DATA_SERVICE_URL: str = "http://localhost:8003"
 
     JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"

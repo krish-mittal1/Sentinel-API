@@ -1,260 +1,407 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sentinel Startup Console</title>
-    <link rel="icon" href="data:," />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;600&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <div class="bg-grid" aria-hidden="true"></div>
-    <header class="hero">
-      <div class="hero__content">
-        <p class="eyebrow">Sentinel Startup Console</p>
-        <h1>Create a startup, verify the founder, and log in.</h1>
-        <p class="lede">
-          Sentinel is now modeled like a real startup auth product, not a raw API harness. The
-          normal path is: create the startup, provision the founder admin, verify the founder, and
-          then log into that startup through the shared gateway.
-        </p>
-        <div class="hero__actions">
-          <a class="button primary" href="#launch">Launch a startup</a>
-          <a class="button ghost" href="#deploy">Deployment overview</a>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentinel Studio</title>
+  <meta name="description" content="Sentinel Studio — open-source mini Supabase. Manage your database, auth users, and API from one beautiful dashboard." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <!-- ── Login Screen ──────────────────────────────────────────────── -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-logo">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <rect width="36" height="36" rx="8" fill="#3ECF8E" fill-opacity="0.15"/>
+          <path d="M18 6L30 12V24L18 30L6 24V12L18 6Z" stroke="#3ECF8E" stroke-width="2" fill="none"/>
+          <circle cx="18" cy="18" r="4" fill="#3ECF8E"/>
+        </svg>
+        <span>Sentinel Studio</span>
+      </div>
+      <h1>Sign in to your project</h1>
+      <p class="login-sub">Open-source Supabase alternative</p>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="loginTenant">Tenant Slug</label>
+          <input id="loginTenant" type="text" placeholder="default" value="default" required />
+        </div>
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input id="loginEmail" type="email" placeholder="admin@example.com" required autocomplete="email" />
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input id="loginPassword" type="password" placeholder="••••••••" required autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="loginBtn">
+          <span>Sign In</span>
+          <svg class="btn-spinner hidden" width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="40" stroke-dashoffset="10"/></svg>
+        </button>
+        <p id="loginError" class="error-msg hidden"></p>
+      </form>
+
+      <div class="login-divider">or</div>
+      <button class="btn btn-ghost btn-full" id="showSignupBtn">Create a new project</button>
+    </div>
+
+    <!-- Signup panel -->
+    <div class="login-card hidden" id="signupCard">
+      <div class="login-logo">
+        <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+          <rect width="36" height="36" rx="8" fill="#3ECF8E" fill-opacity="0.15"/>
+          <path d="M18 6L30 12V24L18 30L6 24V12L18 6Z" stroke="#3ECF8E" stroke-width="2" fill="none"/>
+          <circle cx="18" cy="18" r="4" fill="#3ECF8E"/>
+        </svg>
+        <span>Sentinel Studio</span>
+      </div>
+      <h1>Create a project</h1>
+      <form id="signupForm">
+        <div class="field">
+          <label>Project Name</label>
+          <input id="startupName" type="text" placeholder="Acme Corp" required />
+        </div>
+        <div class="field">
+          <label>Project Slug</label>
+          <input id="startupSlug" type="text" placeholder="acme" required />
+          <small>Lowercase letters, numbers, hyphens only</small>
+        </div>
+        <div class="field">
+          <label>Your Name</label>
+          <input id="founderName" type="text" placeholder="Jane Smith" required />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input id="founderEmail" type="email" placeholder="jane@acme.com" required />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input id="founderPassword" type="password" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Create Project</button>
+        <p id="signupError" class="error-msg hidden"></p>
+        <p id="signupSuccess" class="success-msg hidden"></p>
+      </form>
+      <button class="btn btn-ghost btn-full" id="showLoginBtn" style="margin-top:0.75rem">Back to sign in</button>
+    </div>
+  </div>
+
+  <!-- ── Studio App ────────────────────────────────────────────────── -->
+  <div id="studioApp" class="studio hidden">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="project-badge">
+          <svg width="22" height="22" viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="#3ECF8E" fill-opacity="0.15"/>
+            <path d="M18 6L30 12V24L18 30L6 24V12L18 6Z" stroke="#3ECF8E" stroke-width="1.5" fill="none"/>
+            <circle cx="18" cy="18" r="4" fill="#3ECF8E"/>
+          </svg>
+          <div>
+            <div class="project-name" id="sideProjectName">—</div>
+            <div class="project-slug" id="sideProjectSlug">—</div>
+          </div>
         </div>
       </div>
-      <div class="hero__panel">
-        <div class="panel">
-          <div class="panel__title">Gateway Status</div>
-          <div class="panel__value" id="statusText">Checking...</div>
-          <div class="panel__muted" id="statusUrl">Base URL not set</div>
-          <div class="panel__chip" id="tenantPill">Active startup: none</div>
-          <button class="button subtle" id="checkHealth">Re-check</button>
-        </div>
-        <div class="panel">
-          <div class="panel__title">Startup Flow</div>
-          <ol class="panel__list panel__list--ordered">
-            <li>Create the startup and founder admin in one request.</li>
-            <li>Verify the founder account.</li>
-            <li>Log in with the startup slug.</li>
-            <li>Open the startup dashboard and manage team members.</li>
-          </ol>
-        </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Project</div>
+        <button class="nav-item active" data-view="overview" id="nav-overview">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Overview
+        </button>
+
+        <div class="nav-section-label">Database</div>
+        <button class="nav-item" data-view="editor" id="nav-editor">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+          Table Editor
+        </button>
+        <button class="nav-item" data-view="sql" id="nav-sql">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          SQL Editor
+        </button>
+
+        <div class="nav-section-label">Auth</div>
+        <button class="nav-item" data-view="users" id="nav-users">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Users
+        </button>
+        <button class="nav-item" data-view="logs" id="nav-logs">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Audit Logs
+        </button>
+
+        <div class="nav-section-label">API</div>
+        <button class="nav-item" data-view="apidocs" id="nav-apidocs">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          API Docs
+        </button>
+
+        <div class="nav-section-label">Settings</div>
+        <button class="nav-item" data-view="settings" id="nav-settings">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+          Settings
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="nav-item signout" id="signOutBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign Out
+        </button>
       </div>
-    </header>
+    </aside>
 
-    <main>
-      <section class="section">
-        <div class="section__grid">
+    <!-- Main content area -->
+    <main class="main-content">
+
+      <!-- ── Overview ── -->
+      <section class="view active" id="view-overview">
+        <div class="view-header">
+          <h2>Project Overview</h2>
+          <button class="btn btn-sm btn-ghost" id="refreshMetricsBtn">↻ Refresh</button>
+        </div>
+        <div class="metric-grid" id="metricGrid">
+          <div class="metric-card"><div class="metric-label">Total Users</div><div class="metric-value" id="m-totalUsers">—</div></div>
+          <div class="metric-card"><div class="metric-label">Verified Users</div><div class="metric-value" id="m-verified">—</div></div>
+          <div class="metric-card"><div class="metric-label">Active Sessions</div><div class="metric-value" id="m-sessions">—</div></div>
+          <div class="metric-card"><div class="metric-label">Failed Logins (24h)</div><div class="metric-value danger" id="m-failedLogins">—</div></div>
+          <div class="metric-card"><div class="metric-label">Admins</div><div class="metric-value accent" id="m-admins">—</div></div>
+          <div class="metric-card"><div class="metric-label">Pending Verifications</div><div class="metric-value" id="m-pending">—</div></div>
+        </div>
+
+        <div class="section-grid">
           <div>
-            <h2>What changed</h2>
-            <p>
-              The startup name and the startup slug are now treated differently. Founders create a
-              startup by name, Sentinel provisions an internal slug like <code>codearena</code>,
-              and every future login for that startup uses the slug behind the scenes.
-            </p>
-          </div>
-          <div class="card-stack">
-            <div class="card">
-              <h3>Startup Name</h3>
-              <p>The human-facing company name like <code>CodeArena</code> or <code>Acme Cloud</code>.</p>
-            </div>
-            <div class="card">
-              <h3>Startup Slug</h3>
-              <p>The machine-safe identifier like <code>codearena</code> that routes tenant-scoped auth requests.</p>
-            </div>
-            <div class="card">
-              <h3>Founder Admin</h3>
-              <p>The first account is created as an admin for that startup and verifies before logging in.</p>
+            <h3 class="section-title">Recent Users</h3>
+            <div class="table-wrap">
+              <table class="data-table" id="recentUsersTable">
+                <thead><tr><th>Email</th><th>Role</th><th>Verified</th><th>Joined</th></tr></thead>
+                <tbody id="recentUsersTbody"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+              </table>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section id="launch" class="section">
-        <div class="section__header">
           <div>
-            <h2>Launch a startup</h2>
-            <p>Use the live HTTPS gateway to create a startup, verify the founder, and test the first admin session.</p>
-          </div>
-          <div class="base-url">
-            <label for="baseUrl">Gateway Base URL</label>
-            <input id="baseUrl" type="url" placeholder="https://sentinel.codexarena.app" />
-            <p class="input-help">This stays the same for every startup. Sentinel separates data behind one shared gateway.</p>
-            <button class="button subtle" id="saveBaseUrl">Save</button>
-          </div>
-        </div>
-
-        <div class="forms">
-          <form class="form-card form-card--wide" id="startupForm">
-            <h3>Create Startup</h3>
-            <label>Startup Name</label>
-            <input name="startup_name" type="text" placeholder="CodeArena" required />
-            <label>Startup Slug</label>
-            <input name="startup_slug" type="text" placeholder="codearena" required />
-            <p class="input-help">Use lowercase letters, numbers, and hyphens only.</p>
-            <label>Founder Name</label>
-            <input name="founder_name" type="text" placeholder="Krish" required />
-            <label>Founder Email</label>
-            <input name="founder_email" type="email" placeholder="founder@codearena.app" required />
-            <label>Founder Password</label>
-            <input name="founder_password" type="password" placeholder="Password123" required />
-            <button class="button primary" type="submit">Create startup</button>
-          </form>
-
-          <form class="form-card" id="verifyForm">
-            <h3>Verify Founder</h3>
-            <label>Verification token</label>
-            <input name="token" type="text" placeholder="Paste founder verification token" required />
-            <button class="button primary" type="submit">Verify founder</button>
-          </form>
-
-          <form class="form-card" id="loginForm">
-            <h3>Startup Login</h3>
-            <label>Startup Slug</label>
-            <input name="tenant_slug" type="text" placeholder="codearena" required />
-            <label>Email</label>
-            <input name="email" type="email" placeholder="founder@codearena.app" required />
-            <label>Password</label>
-            <input name="password" type="password" placeholder="Password123" required />
-            <button class="button primary" type="submit">Login to startup</button>
-          </form>
-
-          <form class="form-card" id="sessionForm">
-            <h3>Check Founder Session</h3>
-            <label>Access token</label>
-            <input name="token" type="text" placeholder="Paste or auto-fill access token" required />
-            <button class="button primary" type="submit">Get current founder</button>
-          </form>
-
-          <form class="form-card" id="profileForm">
-            <h3>Fetch Founder Profile</h3>
-            <label>User ID</label>
-            <input name="userId" type="text" placeholder="Paste founder user id" required />
-            <label>Access token</label>
-            <input name="token" type="text" placeholder="Paste or auto-fill access token" required />
-            <button class="button primary" type="submit">Get founder profile</button>
-          </form>
-        </div>
-
-        <div class="forms forms--dashboard">
-          <div class="form-card form-card--wide">
-            <div class="response__header">
-              <h3>Startup Dashboard</h3>
-              <button class="button subtle" id="loadDashboard" type="button">Load dashboard</button>
-            </div>
-            <div class="metric-grid" id="dashboardMetrics">
-              <div class="metric-card">
-                <span>Startup</span>
-                <strong id="metricStartup">-</strong>
-              </div>
-              <div class="metric-card">
-                <span>Slug</span>
-                <strong id="metricSlug">-</strong>
-              </div>
-              <div class="metric-card">
-                <span>Total Users</span>
-                <strong id="metricUsers">-</strong>
-              </div>
-              <div class="metric-card">
-                <span>Verified Users</span>
-                <strong id="metricVerified">-</strong>
-              </div>
-              <div class="metric-card">
-                <span>Admins</span>
-                <strong id="metricAdmins">-</strong>
-              </div>
-              <div class="metric-card">
-                <span>Pending Verifications</span>
-                <strong id="metricPending">-</strong>
-              </div>
-            </div>
-          </div>
-
-          <form class="form-card" id="memberForm">
-            <h3>Create Team Member</h3>
-            <label>Name</label>
-            <input name="name" type="text" placeholder="Aarav" required />
-            <label>Email</label>
-            <input name="email" type="email" placeholder="aarav@codearena.app" required />
-            <label>Password</label>
-            <input name="password" type="password" placeholder="Password123" required />
-            <label>Role</label>
-            <select name="role">
-              <option value="user">user</option>
-              <option value="admin">admin</option>
-            </select>
-            <button class="button primary" type="submit">Create member</button>
-          </form>
-
-          <div class="form-card">
-            <div class="response__header">
-              <h3>Team Members</h3>
-              <button class="button subtle" id="loadTeam" type="button">Refresh team</button>
-            </div>
-            <div class="table-shell">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Verified</th>
-                  </tr>
-                </thead>
-                <tbody id="teamTableBody">
-                  <tr>
-                    <td colspan="4">Log in as a startup admin to load the team.</td>
-                  </tr>
-                </tbody>
+            <h3 class="section-title">Recent Auth Events</h3>
+            <div class="table-wrap">
+              <table class="data-table" id="recentAuditTable">
+                <thead><tr><th>Event</th><th>Status</th><th>Email</th><th>Time</th></tr></thead>
+                <tbody id="recentAuditTbody"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
               </table>
             </div>
           </div>
         </div>
+      </section>
 
-        <div class="response">
-          <div class="response__header">
-            <h3>Response</h3>
-            <button class="button ghost" id="clearOutput">Clear</button>
+      <!-- ── Table Editor ── -->
+      <section class="view" id="view-editor">
+        <div class="view-header">
+          <h2>Table Editor</h2>
+          <div class="header-controls">
+            <select id="tableSelect" class="select-input">
+              <option value="">Select a table…</option>
+            </select>
+            <button class="btn btn-sm btn-primary" id="insertRowBtn">+ Insert Row</button>
           </div>
-          <pre id="output">Waiting for a request...</pre>
+        </div>
+        <div class="table-wrap" id="tableEditorWrap">
+          <div class="empty-state">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+            <p>Select a table to view its rows</p>
+          </div>
+        </div>
+        <!-- Insert Row Modal -->
+        <div class="modal-overlay hidden" id="insertModal">
+          <div class="modal">
+            <div class="modal-header">
+              <h3>Insert Row</h3>
+              <button class="modal-close" id="closeInsertModal">✕</button>
+            </div>
+            <div id="insertFields"></div>
+            <div class="modal-footer">
+              <button class="btn btn-ghost" id="cancelInsertBtn">Cancel</button>
+              <button class="btn btn-primary" id="confirmInsertBtn">Insert</button>
+            </div>
+            <p id="insertError" class="error-msg hidden"></p>
+          </div>
         </div>
       </section>
 
-      <section id="deploy" class="section">
-        <h2>Deployment overview</h2>
-        <div class="deploy-grid">
-          <div class="card">
-            <h3>Azure VM</h3>
-            <p>Run the full stack on a VPS with Docker Compose, Redis, Postgres, and service-level rebuilds.</p>
+      <!-- ── SQL Editor ── -->
+      <section class="view" id="view-sql">
+        <div class="view-header">
+          <h2>SQL Editor</h2>
+          <div class="badge-row">
+            <span class="badge badge-info">SELECT only</span>
+            <span class="badge">Tenant-scoped</span>
           </div>
-          <div class="card">
-            <h3>Pangolin + HTTPS</h3>
-            <p>Expose the gateway through <code>sentinel.codexarena.app</code> with Traefik, TLS, and custom domain routing.</p>
+        </div>
+        <div class="sql-editor-wrap">
+          <div class="sql-toolbar">
+            <span class="mono" style="color:#555;font-size:0.8rem">SQL</span>
+            <button class="btn btn-sm btn-primary" id="runSqlBtn">▶ Run</button>
           </div>
-          <div class="card">
-            <h3>Founder-first frontend</h3>
-            <p>The console now leads with startup creation instead of expecting founders to know internal tenant setup.</p>
+          <textarea id="sqlInput" class="sql-textarea" spellcheck="false" placeholder="SELECT * FROM profiles LIMIT 10;"
+>SELECT * FROM profiles LIMIT 10;</textarea>
+        </div>
+        <div id="sqlResults" class="sql-results">
+          <p class="empty-state-inline">Run a query to see results</p>
+        </div>
+      </section>
+
+      <!-- ── Users ── -->
+      <section class="view" id="view-users">
+        <div class="view-header">
+          <h2>Auth Users</h2>
+          <div class="header-controls">
+            <input type="text" id="userSearchInput" class="search-input" placeholder="Search by email…" />
+            <button class="btn btn-sm btn-ghost" id="refreshUsersBtn">↻ Refresh</button>
           </div>
-          <div class="card">
-            <h3>Startup dashboard</h3>
-            <p>Founders can now inspect startup metrics and create team members from the same console after login.</p>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="usersTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Verified</th>
+                <th>Last Login</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody">
+              <tr><td colspan="6" class="empty">Loading users…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── Audit Logs ── -->
+      <section class="view" id="view-logs">
+        <div class="view-header">
+          <h2>Audit Logs</h2>
+          <div class="header-controls">
+            <select id="logEventFilter" class="select-input">
+              <option value="">All events</option>
+              <option value="login">login</option>
+              <option value="signup">signup</option>
+              <option value="logout">logout</option>
+              <option value="verify_email">verify_email</option>
+              <option value="forgot_password">forgot_password</option>
+              <option value="reset_password">reset_password</option>
+              <option value="refresh">refresh</option>
+            </select>
+            <select id="logStatusFilter" class="select-input">
+              <option value="">All statuses</option>
+              <option value="success">success</option>
+              <option value="failed">failed</option>
+              <option value="blocked">blocked</option>
+            </select>
+            <button class="btn btn-sm btn-ghost" id="refreshLogsBtn">↻ Refresh</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="logsTable">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Status</th>
+                <th>Email</th>
+                <th>IP</th>
+                <th>Details</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="logsTbody">
+              <tr><td colspan="6" class="empty">Loading logs…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── API Docs ── -->
+      <section class="view" id="view-apidocs">
+        <div class="view-header">
+          <h2>API Documentation</h2>
+          <div class="header-controls">
+            <select id="docsTableSelect" class="select-input">
+              <option value="">Select a table…</option>
+            </select>
+          </div>
+        </div>
+        <div id="apiDocsContent">
+          <div class="empty-state">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <p>Select a table to view its API reference</p>
           </div>
         </div>
       </section>
+
+      <!-- ── Settings ── -->
+      <section class="view" id="view-settings">
+        <div class="view-header"><h2>Project Settings</h2></div>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h3>Connection</h3>
+            <div class="setting-row">
+              <span class="setting-label">Gateway URL</span>
+              <code id="settingGateway" class="setting-value">—</code>
+            </div>
+            <div class="setting-row">
+              <span class="setting-label">Data API</span>
+              <code class="setting-value" id="settingDataApi">—</code>
+            </div>
+            <div class="setting-row">
+              <span class="setting-label">Auth API</span>
+              <code class="setting-value" id="settingAuthApi">—</code>
+            </div>
+          </div>
+          <div class="settings-card">
+            <h3>Project</h3>
+            <div class="setting-row">
+              <span class="setting-label">Tenant Slug</span>
+              <code class="setting-value" id="settingSlug">—</code>
+            </div>
+            <div class="setting-row">
+              <span class="setting-label">Your Role</span>
+              <code class="setting-value" id="settingRole">—</code>
+            </div>
+            <div class="setting-row">
+              <span class="setting-label">Email</span>
+              <code class="setting-value" id="settingEmail">—</code>
+            </div>
+          </div>
+          <div class="settings-card">
+            <h3>SDK Quick Start</h3>
+            <pre class="code-block" id="sdkQuickstart">// Install (copy sentinel.js to your project)
+// or use the CDN link
+
+const db = Sentinel.createClient('&lt;GATEWAY_URL&gt;')
+
+// Sign in
+await db.auth.signIn({ email, password })
+
+// Query a table
+const { data } = await db.from('profiles')
+  .select('*')
+  .limit(10)
+  .fetch()</pre>
+          </div>
+        </div>
+      </section>
+
     </main>
+  </div>
 
-    <footer class="footer">
-      <span>Sentinel startup console - Founder onboarding over a shared multi-tenant gateway</span>
-    </footer>
+  <!-- Toast -->
+  <div id="toastContainer" class="toast-container"></div>
 
-    <script src="./config.js"></script>
-    <script src="./app.js"></script>
-  </body>
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+</body>
 </html>

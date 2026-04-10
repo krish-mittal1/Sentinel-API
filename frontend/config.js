@@ -1,14 +1,9 @@
+/**
+ * Sentinel Studio — Configuration
+ * Update GATEWAY_URL to point to your running API gateway.
+ */
 window.SENTINEL_CONFIG = {
-  defaultBaseUrl: "https://sentinel.codexarena.app",
-  defaultTenantSlug: "default",
-  tenantHeaderName: "X-Tenant-Slug",
-  onboardStartupPath: "/auth/onboard-startup",
-  startupOverviewPath: "/auth/admin/startup-overview",
-  createMemberPath: "/auth/admin/members",
-  signupPath: "/auth/signup",
-  verifyPath: "/auth/verify-email",
-  loginPath: "/auth/login",
-  mePath: "/auth/me",
-  teamListPath: "/users",
-  userPathTemplate: "/users/{userId}"
+  GATEWAY_URL: "http://localhost:8010",
+  // For local dev, set AUTH_DEBUG_RETURN_TOKENS=true in .env
+  // so verification tokens are returned in the sign-up response.
 };

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentinel SDK Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f0f0f; color: #e5e5e5; font-family: 'Segoe UI', system-ui, sans-serif; padding: 2rem; }
+    h1 { color: #3ECF8E; font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .tag { background: #1a1a1a; border: 1px solid #333; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; color: #888; }
+    .card { background: #111; border: 1px solid #222; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; }
+    label { font-size: 0.8rem; color: #888; display: block; margin-bottom: 4px; }
+    input { background: #1a1a1a; border: 1px solid #333; border-radius: 6px; padding: 8px 12px; color: #e5e5e5; width: 100%; margin-bottom: 12px; font-size: 0.9rem; }
+    button { background: #3ECF8E; color: #000; border: none; border-radius: 6px; padding: 10px 18px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+    button:hover { background: #2db876; }
+    pre { background: #0a0a0a; border: 1px solid #222; border-radius: 8px; padding: 1rem; font-size: 0.8rem; overflow-x: auto; white-space: pre-wrap; color: #3ECF8E; margin-top: 1rem; min-height: 60px; }
+    h2 { font-size: 1rem; color: #ccc; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Sentinel SDK <span class="tag">v1.0.0</span></h1>
+  <p style="color:#666; margin-bottom:2rem">Live demo of the Sentinel JavaScript client</p>
+
+  <div class="card">
+    <h2>⚙️ Configure</h2>
+    <label>Gateway Base URL</label>
+    <input id="baseUrl" placeholder="http://localhost:8010" value="http://localhost:8010" />
+    <label>Tenant Slug</label>
+    <input id="tenantSlug" placeholder="default" value="default" />
+  </div>
+
+  <div class="card">
+    <h2>🔐 Sign Up</h2>
+    <label>Name</label><input id="signupName" placeholder="Krish" />
+    <label>Email</label><input id="signupEmail" placeholder="krish@example.com" type="email" />
+    <label>Password</label><input id="signupPass" type="password" placeholder="Password123" />
+    <button onclick="doSignup()">Sign Up</button>
+    <pre id="signupOut">—</pre>
+  </div>
+
+  <div class="card">
+    <h2>🔑 Sign In</h2>
+    <label>Email</label><input id="loginEmail" type="email" placeholder="krish@example.com" />
+    <label>Password</label><input id="loginPass" type="password" placeholder="Password123" />
+    <button onclick="doLogin()">Sign In</button>
+    <pre id="loginOut">—</pre>
+  </div>
+
+  <div class="card">
+    <h2>📦 Read Table (profiles)</h2>
+    <label>Limit</label><input id="selectLimit" value="10" />
+    <button onclick="doSelect()">Fetch Profiles</button>
+    <pre id="selectOut">—</pre>
+  </div>
+
+  <div class="card">
+    <h2>➕ Insert into profiles</h2>
+    <label>Display Name</label><input id="insertName" placeholder="Krish Mittal" />
+    <label>Bio</label><input id="insertBio" placeholder="Building cool things" />
+    <button onclick="doInsert()">Insert Row</button>
+    <pre id="insertOut">—</pre>
+  </div>
+
+  <div class="card">
+    <h2>🗄️ Run SQL (SELECT only)</h2>
+    <label>Query</label>
+    <input id="sqlQuery" value="SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name" />
+    <button onclick="doSql()">Run Query</button>
+    <pre id="sqlOut">—</pre>
+  </div>
+
+  <script src="../sentinel.js"></script>
+  <script>
+    function getClient() {
+      const url = document.getElementById('baseUrl').value;
+      return Sentinel.createClient(url);
+    }
+
+    function out(id, data) {
+      document.getElementById(id).textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function doSignup() {
+      const client = getClient();
+      const tenantSlug = document.getElementById('tenantSlug').value || 'default';
+      const result = await client.auth.signUp({
+        name: document.getElementById('signupName').value,
+        email: document.getElementById('signupEmail').value,
+        password: document.getElementById('signupPass').value,
+        tenantSlug,
+      });
+      out('signupOut', result);
+    }
+
+    async function doLogin() {
+      const client = getClient();
+      const tenantSlug = document.getElementById('tenantSlug').value || 'default';
+      const result = await client.auth.signIn({
+        email: document.getElementById('loginEmail').value,
+        password: document.getElementById('loginPass').value,
+        tenantSlug,
+      });
+      out('loginOut', result);
+    }
+
+    async function doSelect() {
+      const client = getClient();
+      const limit = parseInt(document.getElementById('selectLimit').value) || 10;
+      const result = await client.from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(limit)
+        .fetch();
+      out('selectOut', result);
+    }
+
+    async function doInsert() {
+      const client = getClient();
+      const result = await client.from('profiles').insert({
+        display_name: document.getElementById('insertName').value,
+        bio: document.getElementById('insertBio').value,
+      });
+      out('insertOut', result);
+    }
+
+    async function doSql() {
+      const client = getClient();
+      const result = await client.sql(document.getElementById('sqlQuery').value);
+      out('sqlOut', result);
+    }
+  </script>
+</body>
+</html>

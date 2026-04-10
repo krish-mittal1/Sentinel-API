@@ -77,6 +77,16 @@ services:
       migrations:
         condition: service_completed_successfully
 
+  data-service:
+    build: ./data-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+
   api-gateway:
     build: ./api-gateway
     restart: unless-stopped
@@ -87,10 +97,13 @@ services:
       REDIS_HOST: redis
       AUTH_SERVICE_URL: http://auth-service:8001
       USER_SERVICE_URL: http://user-service:8002
+      DATA_SERVICE_URL: http://data-service:8003
     depends_on:
       auth-service:
         condition: service_started
       user-service:
+        condition: service_started
+      data-service:
         condition: service_started
       redis:
         condition: service_healthy
