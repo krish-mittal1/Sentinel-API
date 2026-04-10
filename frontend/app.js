@@ -21,6 +21,8 @@ let _currentView   = 'overview';
 async function api(method, path, body, opts = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (_token) headers['Authorization'] = `Bearer ${_token}`;
+  // Pass tenant slug as header (the auth service reads X-Tenant-Slug)
+  if (opts._tenantSlug) { headers['X-Tenant-Slug'] = opts._tenantSlug; delete opts._tenantSlug; }
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers,
@@ -131,11 +133,20 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   const email    = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
 
-  const { ok, data } = await apiPost(`/auth/${tenantSlug}/login`, { email, password });
+  const res = await fetch(`${BASE}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Tenant-Slug': tenantSlug,
+      ..._token ? { 'Authorization': `Bearer ${_token}` } : {},
+    },
+    body: JSON.stringify({ email, password }),
+  });
   btn.disabled = false;
   document.querySelector('#loginBtn .btn-spinner').classList.add('hidden');
 
-  if (!ok) {
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
     errEl.textContent = data?.detail || 'Invalid credentials';
     errEl.classList.remove('hidden');
     return;
@@ -162,7 +173,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
   const okEl  = document.getElementById('signupSuccess');
   errEl.classList.add('hidden'); okEl.classList.add('hidden');
 
-  const { ok, data } = await apiPost('/auth/onboard', {
+  const { ok, data } = await apiPost('/auth/onboard-startup', {
     startup_name:      document.getElementById('startupName').value.trim(),
     startup_slug:      document.getElementById('startupSlug').value.trim(),
     founder_name:      document.getElementById('founderName').value.trim(),
