@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # Alembic metadata
-revision = "0003"
-down_revision = "0002"
+revision = "20260411_0003"
+down_revision = "20260409_0002"
 branch_labels = None
 depends_on = None
 
